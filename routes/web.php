@@ -35,6 +35,9 @@ Route::post('/lupa-password', function (Request $request) {
 // Halaman utama
 Route::view('/', 'welcome')->name('home');
 
+// Halaman beranda
+Route::view('/beranda', 'welcome')->name('beranda');
+
 // Registrasi
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])

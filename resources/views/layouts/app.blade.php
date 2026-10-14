@@ -549,7 +549,7 @@
     <a href="{{ route('home') }}" class="brand">@bucket.imy</a>
 
     <nav class="nav-links">
-        <a href="{{ route('home') }}">Beranda</a>
+        <a href="{{ route('beranda') }}">Beranda</a>
         <a href="{{ route('home') }}#katalog">Katalog</a>
         <a href="{{ url('/#cara-pesan') }}">Cara Pesan</a>
         <a href="{{ url('/#tentang-kami') }}">Tentang Kami</a>
