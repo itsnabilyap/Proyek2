@@ -52,7 +52,14 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [AuthController::class, 'login'])
         ->name('login.process');
-});
+
+    // Login admin dan owner
+    Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])
+        ->name('admin.login');
+
+    Route::post('/admin/login', [AuthController::class, 'adminLogin'])
+        ->name('admin.login.process');
+    });
 
 // Form reset password
 Route::get('/reset-password/{token}', function (
@@ -97,3 +104,13 @@ Route::post('/reset-password', function (Request $request) {
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::view('/admin/dashboard', 'admin.dashboard')
+        ->name('admin.dashboard');
+});
+
+Route::middleware(['auth', 'role:owner'])->group(function () {
+    Route::view('/owner/dashboard', 'owner.dashboard')
+        ->name('owner.dashboard');
+});

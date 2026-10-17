@@ -41,6 +41,11 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    public function showAdminLogin()
+    {
+        return view('auth.admin-login');
+    }
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -48,18 +53,12 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt([
+            'username' => $credentials['username'],
+            'password' => $credentials['password'],
+            'role' => 'pelanggan',
+        ], $request->boolean('remember'))) {
             $request->session()->regenerate();
-
-            $role = Auth::user()->role;
-
-            if ($role === 'admin') {
-                return redirect('/admin/dashboard');
-            }
-
-            if ($role === 'owner') {
-                return redirect('/owner/dashboard');
-            }
 
             return redirect('/');
         }
@@ -71,13 +70,45 @@ class AuthController extends Controller
             ->onlyInput('username');
     }
 
+
+    public function adminLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+            'role' => 'required|in:admin,owner',
+        ]);
+    
+        $selectedRole = $credentials['role'];
+    
+        if (Auth::attempt([
+            'username' => $credentials['username'],
+            'password' => $credentials['password'],
+            'role' => $selectedRole,
+        ], $request->boolean('remember'))) {
+            $request->session()->regenerate();
+    
+            if ($selectedRole === 'admin') {
+                return redirect('/admin/dashboard');
+            }
+    
+            return redirect('/owner/dashboard');
+        }
+    
+        return back()
+            ->withErrors([
+                'username' => 'Username, password, atau pilihan role salah.',
+            ])
+            ->onlyInput('username', 'role');
+    }
     public function logout(Request $request)
     {
         Auth::logout();
-
+    
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect('/login');
+    
+        return redirect()->route('admin.login');
     }
+
 }
