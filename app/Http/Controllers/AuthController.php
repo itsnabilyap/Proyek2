@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -101,6 +102,34 @@ class AuthController extends Controller
             ])
             ->onlyInput('username', 'role');
     }
+
+        public function showForgotPassword()
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with(
+                'success',
+                'Link reset password berhasil dikirim ke email kamu.'
+            );
+        }
+
+        return back()->withErrors([
+            'email' => __($status),
+        ]);
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();

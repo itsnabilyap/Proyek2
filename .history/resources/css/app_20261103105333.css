@@ -1,0 +1,153 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+.account-menu {
+    position: relative;
+    display: inline-block;
+    font-family: 'Poppins', sans-serif;
+}
+
+.account-button,
+.account-avatar {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: #bd6075;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.account-button {
+    cursor: pointer;
+}
+
+.account-dropdown {
+    position: absolute;
+    top: 52px;
+    right: 0;
+    width: 320px;
+    max-width: calc(100vw - 24px);
+    background: #fff7f8;
+    border: 1px solid #f1dfe3;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 28px #572b351c;
+    z-index: 1000;
+}
+
+.account-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border: 1px solid #f3dce2;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.account-avatar {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+}
+
+.account-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.account-info strong {
+    font-size: 12px;
+}
+
+.account-info small {
+    font-size: 10px;
+    color: #777;
+    overflow-wrap: anywhere;
+}
+
+.account-status {
+    align-self: flex-start;
+    color: #47754e;
+    background: #e0f1df;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 9px;
+}
+
+.account-links a {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 7px;
+    text-decoration: none;
+    color: #49363a;
+    border-radius: 8px;
+}
+
+.account-links a:hover {
+    background: #f8e8ec;
+}
+
+.account-links a > span:first-child {
+    color: #bd6075;
+}
+
+.account-links a div {
+    flex: 1;
+    min-width: 0;
+}
+
+.account-links a strong,
+.account-links a small {
+    display: block;
+}
+
+.account-links a strong {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.account-links a small {
+    margin-top: 3px;
+    font-size: 9px;
+    color: #817176;
+}
+
+.logout-button {
+    width: 100%;
+    text-align: left;
+    padding: 12px 7px 5px;
+    border: none;
+    border-top: 1px solid #f0dce1;
+    margin-top: 5px;
+    background: transparent;
+    color: #bd4357;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 480px) {
+    .account-dropdown {
+        right: -5px;
+        width: 300px;
+    }
+}

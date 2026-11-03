@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Models;
@@ -25,18 +24,19 @@ class Produk extends Model
     {
         return $this->belongsTo(Kategori::class, 'id_kategori', 'id_kategori');
     }
-}
 
-public function stok(): HasMany
-{
-    return $this->hasMany(Stok::class, 'id_produk', 'id_produk');
-}
+    public function stok(): HasMany
+    {
+        return $this->hasMany(Stok::class, 'id_produk', 'id_produk');
+    }
 
-public function detailBahan(): HasMany
-{
-    return $this->hasMany(
-        DetailBahan::class,
-        'id_produk',
-        'id_produk'
-    );
+    public function detailBahan(): HasMany
+    {
+        return $this->hasMany(
+            DetailBahan::class,
+            'id_produk',
+            'id_produk'
+        );
+    }
+
 }
