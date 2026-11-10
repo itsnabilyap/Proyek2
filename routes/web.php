@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -55,6 +54,13 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [AuthController::class, 'login'])
         ->name('login.process');
+
+    // Login admin dan owner
+    Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])
+        ->name('admin.login');
+
+    Route::post('/admin/login', [AuthController::class, 'adminLogin'])
+        ->name('admin.login.process');
 });
 
 // Form reset password
@@ -140,4 +146,16 @@ Route::middleware('auth')->group(function () {
     // Tombol "Pesan Sekarang" di katalog
     Route::post('/keranjang', [CartController::class, 'store'])
         ->name('keranjang.store');
+});
+
+// Area admin
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::view('/admin/dashboard', 'admin.dashboard')
+        ->name('admin.dashboard');
+});
+
+// Area owner
+Route::middleware(['auth', 'role:owner'])->group(function () {
+    Route::view('/owner/dashboard', 'owner.dashboard')
+        ->name('owner.dashboard');
 });
