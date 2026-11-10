@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Models;
@@ -20,13 +19,57 @@ class Pesanan extends Model
         'total_harga',
         'alamat_pengiriman',
         'catatan',
+        'metode_pengambilan',
+        'nama_penerima',
+        'no_whatsapp',
+        'tanggal_pengiriman',
+        'slot_waktu',
+        'layanan_kurir',
+        'ongkir',
+        'metode_pembayaran',
+        'dibayar_pada',
     ];
+
+    public const ALAMAT_TOKO = 'Jl. Tridaya Barat, Karanganyar, Kec. Indramayu, Kabupaten Indramayu, Jawa Barat 45213, Indonesia';
+
+    public const SLOT_WAKTU = [
+        '08.00 - 10.00 WIB',
+        '10.00 - 12.00 WIB',
+        '13.00 - 15.00 WIB',
+        '15.00 - 17.00 WIB',
+    ];
+
+    public const LAYANAN_KURIR = [
+        'motor' => [
+            'nama' => 'Kurir Instan Motor',
+            'tarif' => 15000,
+            'info' => 'Cocok untuk buket ukuran kecil - sedang. Lebih cepat dan ekonomis.',
+        ],
+        'mobil' => [
+            'nama' => 'Kurir Mobil AC Khusus Bucket Besar / Premium',
+            'tarif' => 65000,
+            'info' => 'Cocok untuk buket ukuran besar/giant bouquet, rangkaian bunga papan/vas premium, atau pengiriman jarak jauh.',
+        ],
+    ];
+
+    public const PEMBAYARAN = [
+        'QRIS' => ['nama' => 'QRIS', 'info' => 'Dana/GoPay/OVO'],
+        'BCA_VA' => ['nama' => 'BCA VA', 'info' => 'Virtual Account'],
+    ];
+
+    public function getNomorAttribute(): string
+    {
+        return 'B-' . str_pad((string) $this->id_pesanan, 3, '0', STR_PAD_LEFT);
+    }
 
     protected function casts(): array
     {
         return [
             'tanggal_pesanan' => 'datetime',
             'total_harga' => 'decimal:2',
+            'ongkir' => 'decimal:2',
+            'tanggal_pengiriman' => 'date',
+            'dibayar_pada' => 'datetime',
         ];
     }
 

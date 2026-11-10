@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Models;
@@ -13,6 +12,11 @@ class CustomPesanan extends Model
 
     protected $fillable = [
         'id_pesanan',
+        'nama_pemesan',
+        'no_whatsapp',
+        'jenis_bucket',
+        'budget',
+        'tanggal_dibutuhkan',
         'ukuran',
         'bahan',
         'kertas',
@@ -25,6 +29,7 @@ class CustomPesanan extends Model
     {
         return [
             'harga_custom' => 'decimal:2',
+            'tanggal_dibutuhkan' => 'date',
         ];
     }
 

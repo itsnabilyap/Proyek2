@@ -61,7 +61,7 @@ class AuthController extends Controller
                 return redirect('/owner/dashboard');
             }
 
-            return redirect('/');
+            return redirect()->intended('/');
         }
 
         return back()
