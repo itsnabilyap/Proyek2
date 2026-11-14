@@ -61,7 +61,17 @@ class AuthController extends Controller
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            return redirect('/');
+            $role = Auth::user()->role;
+
+            if ($role === 'admin') {
+                return redirect('/admin/dashboard');
+            }
+
+            if ($role === 'owner') {
+                return redirect('/owner/dashboard');
+            }
+
+            return redirect()->intended('/');
         }
 
         return back()
@@ -71,7 +81,6 @@ class AuthController extends Controller
             ->onlyInput('username');
     }
 
-
     public function adminLogin(Request $request)
     {
         $credentials = $request->validate([
@@ -79,23 +88,23 @@ class AuthController extends Controller
             'password' => 'required|string',
             'role' => 'required|in:admin,owner',
         ]);
-    
+
         $selectedRole = $credentials['role'];
-    
+
         if (Auth::attempt([
             'username' => $credentials['username'],
             'password' => $credentials['password'],
             'role' => $selectedRole,
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
-    
+
             if ($selectedRole === 'admin') {
                 return redirect('/admin/dashboard');
             }
-    
+
             return redirect('/owner/dashboard');
         }
-    
+
         return back()
             ->withErrors([
                 'username' => 'Username, password, atau pilihan role salah.',
@@ -103,7 +112,7 @@ class AuthController extends Controller
             ->onlyInput('username', 'role');
     }
 
-        public function showForgotPassword()
+    public function showForgotPassword()
     {
         return view('auth.forgot-password');
     }
@@ -133,11 +142,10 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-    
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-    
+
         return redirect()->route('admin.login');
     }
-
 }

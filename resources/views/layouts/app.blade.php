@@ -16,7 +16,7 @@
 
     <nav class="nav-links">
         <a href="{{ route('beranda') }}">Beranda</a>
-        <a href="{{ route('home') }}#katalog">Katalog</a>
+        <a href="{{ route('katalog.index') }}">Katalog</a>
         <a href="{{ url('/#cara-pesan') }}">Cara Pesan</a>
         <a href="{{ url('/#tentang-kami') }}">Tentang Kami</a>
     </nav>
@@ -56,7 +56,8 @@
                         <i class="bi bi-chevron-right"></i>
                     </a>
 
-                    <a href="{{ route('home') }}#katalog" class="account-link">
+                    <a href="{{ route('katalog.index') }}"
+                        class="account-link {{ request()->routeIs('katalog.*') ? 'active' : '' }}">
                         <i class="bi bi-flower1"></i>
                         <div>
                             <strong>Katalog Koleksi Bucket</strong>
@@ -65,7 +66,8 @@
                         <i class="bi bi-chevron-right"></i>
                     </a>
 
-                    <a href="{{ url('/pesanan/custom') }}" class="account-link">
+                    <a href="{{ route('pesanan.custom') }}"
+                        class="account-link {{ request()->routeIs('pesanan.custom*') ? 'active' : '' }}">
                         <i class="bi bi-pencil-square"></i>
                         <div>
                             <strong>Form Pemesanan Custom</strong>

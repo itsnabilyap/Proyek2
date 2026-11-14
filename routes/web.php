@@ -1,8 +1,10 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\PesananController;
+use App\Http\Controllers\ProdukController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
@@ -59,7 +61,7 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/admin/login', [AuthController::class, 'adminLogin'])
         ->name('admin.login.process');
-    });
+});
 
 // Form reset password
 Route::get('/reset-password/{token}', function (
@@ -105,11 +107,54 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
+// Area pelanggan (diakses dari popup profil)
+Route::middleware('auth')->group(function () {
+    // Katalog Koleksi Bucket
+    Route::get('/katalog', [ProdukController::class, 'index'])
+        ->name('katalog.index');
+
+    // Form Pemesanan Custom
+    Route::get('/pesanan/custom', [PesananController::class, 'custom'])
+        ->name('pesanan.custom');
+
+    Route::post('/pesanan/custom', [PesananController::class, 'storeCustom'])
+        ->name('pesanan.custom.store');
+
+    // Keranjang & Checkout (Pick Up / Kurir) + Pembayaran Berhasil
+    Route::get('/keranjang', [CartController::class, 'index'])
+        ->name('keranjang.index');
+
+    Route::delete('/keranjang/{id}', [CartController::class, 'destroy'])
+        ->whereNumber('id')->name('keranjang.destroy');
+
+    Route::post('/checkout', [PesananController::class, 'checkout'])
+        ->name('checkout.store');
+
+    Route::get('/pesanan/{id}/sukses', [PesananController::class, 'sukses'])
+        ->whereNumber('id')->name('pesanan.sukses');
+
+    // Riwayat Pesanan (3.5.13)
+    Route::get('/pesanan/riwayat', [PesananController::class, 'riwayat'])
+        ->name('pesanan.riwayat');
+
+    Route::post('/pesanan/{id}/beli-lagi', [PesananController::class, 'beliLagi'])
+        ->whereNumber('id')->name('pesanan.beli-lagi');
+
+    Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'ulasan'])
+        ->whereNumber('id')->name('pesanan.ulasan');
+
+    // Tombol "Pesan Sekarang" di katalog
+    Route::post('/keranjang', [CartController::class, 'store'])
+        ->name('keranjang.store');
+});
+
+// Area admin
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::view('/admin/dashboard', 'admin.dashboard')
         ->name('admin.dashboard');
 });
 
+// Area owner
 Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::view('/owner/dashboard', 'owner.dashboard')
         ->name('owner.dashboard');
