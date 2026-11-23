@@ -6,7 +6,6 @@
     $rupiah = fn ($n) => 'Rp' . number_format((int) $n, 0, ',', '.');
     $ukuran = $produk->ukuran;
     $pilih = $ukuran->firstWhere('id', (int) old('ukuran_produk_id')) ?? $ukuran->first();
-    $tabel = $produk->tabelPerbandingan();
     $habis = $produk->stok < 1;
     $uang = $produk->adalahBucketUang();
     $varianAwal = old('varian', $produk->varian_pilihan[0] ?? null);
@@ -60,7 +59,7 @@
             <h1 class="mt-3 mb-1.5 font-serif text-[34px] leading-tight font-medium lg:text-[38px]">{{ $produk->nama_produk }}</h1>
             <p class="mb-5 text-sm leading-relaxed text-ink-soft">
                 @if ($uang)
-                    Harga di pilihan lembar adalah <b>bahan + jasa merangkai</b>. Nilai uangnya (jumlah lembar × pecahan) ikut ditambahkan ke total, jadi cukup bayar sekali di website.
+                    Harga di bawah adalah <b>bahan + jasa merangkai</b>. Uangnya dari kamu sendiri, diserahkan ke atelier sebelum dirangkai.
                 @else
                     {{ $produk->deskripsi }}
                 @endif
@@ -144,10 +143,10 @@
             {{-- Bucket uang: yang dibayar sekarang vs uang yang disiapkan --}}
             @if ($uang)
                 <section class="mb-5.5 rounded-2xl border border-line bg-white px-5 py-4.5 text-sm">
-                    <div class="flex justify-between gap-3 py-1.5"><span class="text-muted">Uang yang dirangkai (<span data-u-rincian></span>)</span><span class="font-semibold" data-u-nilai></span></div>
-                    <div class="flex justify-between gap-3 py-1.5"><span class="text-muted">Bahan + jasa {{ $namaModel }}</span><span class="font-semibold" data-u-jasa></span></div>
-                    <div class="mt-1.5 flex justify-between gap-3 border-t border-line-soft pt-3 text-base"><strong>Harga 1 buket</strong><strong class="text-maroon" data-u-total></strong></div>
-                    <p class="mt-2.5 text-xs leading-relaxed text-muted">Semua dibayar sekali di website. Uangnya kami siapkan dalam kondisi baru sesuai pecahan yang kamu pilih.</p>
+                    <div class="flex justify-between gap-3 py-1.5"><span class="text-muted">Uang yang dirangkai</span><span class="font-semibold"><span data-u-nilai></span> <span class="font-normal text-muted">(dari kamu)</span></span></div>
+                    <div class="flex justify-between gap-3 py-1.5"><span class="text-muted">{{ $namaModel }} · <span data-u-lembar></span></span><span class="font-semibold" data-u-jasa></span></div>
+                    <div class="mt-1.5 flex justify-between gap-3 border-t border-line-soft pt-3 text-base"><strong>Dibayar sekarang</strong><strong class="text-maroon" data-u-jasa></strong></div>
+                    <p class="mt-2.5 text-xs leading-relaxed text-muted">Nilai buket jadi: <span data-u-total></span>. Uang <span data-u-nilai></span> kamu serahkan langsung di atelier paling lambat H-1 sebelum jadwal.</p>
                 </section>
             @endif
 
@@ -197,44 +196,6 @@
             @endif
         </form>
     </div>
-
-    {{-- ===== PERBANDINGAN UKURAN ===== --}}
-    @if (count($tabel))
-        <section class="mt-16" aria-labelledby="judulBanding">
-            <p class="mb-2 text-[11px] font-semibold tracking-[.12em] text-maroon">BEDANYA APA?</p>
-            <h2 id="judulBanding" class="mt-1 mb-5.5 font-serif text-[34px] font-medium">Perbandingan Ukuran</h2>
-
-            <div class="overflow-x-auto rounded-[18px] border border-line-soft bg-white">
-                <table class="w-full min-w-[640px] border-collapse text-sm">
-                    <thead>
-                        <tr class="border-b border-line-soft">
-                            <th scope="col" class="px-5 py-4 text-left align-top font-normal text-muted">Detail</th>
-                            @foreach ($ukuran as $u)
-                                <th scope="col" data-col="{{ $u->id }}" @if ($u->id === $pilih->id) data-aktif @endif
-                                    class="px-5 py-4 text-left align-top font-normal text-muted data-aktif:bg-blush-50 data-aktif:shadow-[inset_0_3px_0_var(--color-maroon)]">
-                                    <strong class="block text-base text-ink">{{ $u->nama_ukuran }}</strong>
-                                    <span class="text-[13px] font-semibold text-maroon">{{ $rupiah($u->harga) }}</span>
-                                </th>
-                            @endforeach
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($tabel as $namaBaris => $nilai)
-                            <tr class="border-b border-line-soft last:border-0">
-                                <th scope="row" class="px-5 py-4 text-left font-medium">{{ $namaBaris }}</th>
-                                @foreach ($ukuran as $u)
-                                    <td data-col="{{ $u->id }}" @if ($u->id === $pilih->id) data-aktif @endif
-                                        class="px-5 py-4 text-ink-soft data-aktif:bg-blush-50 data-aktif:font-semibold data-aktif:text-ink">
-                                        {{ $nilai[$u->id] ?? '-' }}
-                                    </td>
-                                @endforeach
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    @endif
 
     {{-- ===== BUKET LAINNYA ===== --}}
     @if ($lainnya->isNotEmpty())
@@ -287,27 +248,21 @@
             const v = form.querySelector('input[name="varian"]:checked');
             const n = Math.min(20, Math.max(1, parseInt(jumlah?.value) || 1));
 
-            // Bucket uang: harga 1 buket = bahan + jasa + (lembar × pecahan)
-            const uang = form.hasAttribute('data-uang');
-            const nilai = uang ? angka(r.dataset.nama) * (v ? angka(v.value) : 0) : 0;
-            const satuan = Number(r.dataset.harga) + nilai;
-
-            document.getElementById('hargaBesar').textContent = rupiah(satuan);
+            document.getElementById('hargaBesar').textContent = rupiah(r.dataset.harga);
             const total = document.getElementById('totalHarga');
-            if (total) total.textContent = rupiah(satuan * n);
+            if (total) total.textContent = rupiah(r.dataset.harga * n);
 
             // Ringkasan di samping harga (varian ikut ditulis, kecuali pecahan bucket uang)
             document.getElementById('ringkasPilihan').textContent =
                 r.dataset.ringkas + (v && !form.hasAttribute('data-uang') ? ' · ' + v.value : '');
 
-            // Sorot kolom ukuran yang dipilih di tabel perbandingan
-            document.querySelectorAll('[data-col]').forEach(el => el.toggleAttribute('data-aktif', el.dataset.col === r.value));
 
-            if (!uang) return;
-            isi('data-u-rincian', r.dataset.nama + ' × ' + (v ? v.value : '-'));
-            isi('data-u-nilai', rupiah(nilai));
+            if (!form.hasAttribute('data-uang')) return;
+            const nilai = angka(r.dataset.nama) * (v ? angka(v.value) : 0);
+            isi('data-u-lembar', r.dataset.nama);
             isi('data-u-jasa', rupiah(r.dataset.harga));
-            isi('data-u-total', rupiah(satuan));
+            isi('data-u-nilai', rupiah(nilai));
+            isi('data-u-total', rupiah(nilai + Number(r.dataset.harga)));
         };
 
         // Tombol − / + jumlah buket
