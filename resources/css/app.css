@@ -1,155 +1,182 @@
+/* ==========================================================================
+   app.css · @bucket.imy
+   Satu file Tailwind untuk halaman pelanggan dan dashboard admin/owner.
+
+   1. Import & sumber class
+   2. Token brand (@theme)       → bg-maroon, text-wine, font-serif, shadow-soft, dst.
+   3. Dasar (@layer base)
+   4. Komponen kecil (@layer components) · termasuk kartu/tabel/isian dashboard admin
+      Hanya untuk potongan yang dipakai di BANYAK halaman (tombol, input, badge).
+      Sisanya ditulis langsung sebagai class Tailwind di file Blade.
+   ========================================================================== */
+
+/* 1. Import & sumber class ------------------------------------------------- */
 @import "tailwindcss";
 
-@source "../views/**/*.blade.php";
-@source "../js/**/*.js";
-@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
-@source "../../storage/framework/views/*.php";
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+@source '../../app';   /* class status yang ditulis di Model/Controller (st-*, b-*) */
 
+/* 2. Token brand ------------------------------------------------------------ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-maroon: #9B4555;
+    --color-maroon-dark: #8E3B4C;
+    --color-wine: #5E2633;
+    --color-sidebar: #6B2A38;
+
+    --color-blush: #FBEAEE;
+    --color-blush-50: #FFFAFB;
+    --color-blush-100: #FBEEF1;
+    --color-blush-200: #FCE6EB;
+    --color-blush-300: #F9E9EC;
+    --color-rose: #D9A6B1;
+
+    --color-cream: #FDF5F6;
+    --color-paper: #F8F3F4;
+
+    --color-line: #EBD3D8;
+    --color-line-soft: #F3E2E6;
+
+    --color-ink: #2A1A1E;
+    --color-ink-soft: #4A383D;
+    --color-muted: #6E5A60;
+    --color-placeholder: #9C868C;
+
+    --color-danger: #B3261E;
+    --color-danger-soft: #FDF0EF;
+    --color-ok: #2A6541;
+    --color-ok-soft: #E4F3EA;
+    --color-gold: #E0A526;
+
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+
+    --shadow-card: 0 12px 30px -24px rgb(94 38 51 / 0.40);
+    --shadow-soft: 0 20px 44px -30px rgb(94 38 51 / 0.35);
+    --shadow-pop: 0 24px 50px -24px rgb(94 38 51 / 0.35);
+    --shadow-lift: 0 18px 36px -22px rgb(94 38 51 / 0.45);
+    --shadow-btn: 0 14px 28px -14px rgb(155 69 85 / 0.70);
 }
 
-.account-menu {
-    position: relative;
-    display: inline-block;
-    font-family: 'Poppins', sans-serif;
+/* 3. Dasar ------------------------------------------------------------------ */
+@layer base {
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body { @apply bg-cream font-sans text-ink antialiased; }
+    button:not(:disabled), [role="button"], label[for], summary { cursor: pointer; }
+    [hidden] { display: none !important; }
 }
 
-.account-button,
-.account-avatar {
-    width: 42px;
-    height: 42px;
-    border: none;
-    border-radius: 50%;
-    background: #bd6075;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-}
-
-.account-button {
-    cursor: pointer;
-}
-
-.account-dropdown {
-    position: absolute;
-    top: 52px;
-    right: 0;
-    width: 320px;
-    max-width: calc(100vw - 24px);
-    background: #fff7f8;
-    border: 1px solid #f1dfe3;
-    border-radius: 16px;
-    padding: 12px;
-    box-shadow: 0 8px 28px #572b351c;
-    z-index: 1000;
-}
-
-.account-profile {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border: 1px solid #f3dce2;
-    border-radius: 12px;
-    margin-bottom: 8px;
-}
-
-.account-avatar {
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
-    font-size: 12px;
-}
-
-.account-info {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.account-info strong {
-    font-size: 12px;
-}
-
-.account-info small {
-    font-size: 10px;
-    color: #777;
-    overflow-wrap: anywhere;
-}
-
-.account-status {
-    align-self: flex-start;
-    color: #47754e;
-    background: #e0f1df;
-    padding: 2px 7px;
-    border-radius: 20px;
-    font-size: 9px;
-}
-
-.account-links a {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 7px;
-    text-decoration: none;
-    color: #49363a;
-    border-radius: 8px;
-}
-
-.account-links a:hover {
-    background: #f8e8ec;
-}
-
-.account-links a > span:first-child {
-    color: #bd6075;
-}
-
-.account-links a div {
-    flex: 1;
-    min-width: 0;
-}
-
-.account-links a strong,
-.account-links a small {
-    display: block;
-}
-
-.account-links a strong {
-    font-size: 10px;
-    font-weight: 500;
-}
-
-.account-links a small {
-    margin-top: 3px;
-    font-size: 9px;
-    color: #817176;
-}
-
-.logout-button {
-    width: 100%;
-    text-align: left;
-    padding: 12px 7px 5px;
-    border: none;
-    border-top: 1px solid #f0dce1;
-    margin-top: 5px;
-    background: transparent;
-    color: #bd4357;
-    font-size: 11px;
-    cursor: pointer;
-}
-
-[hidden] {
-    display: none !important;
-}
-
-@media (max-width: 480px) {
-    .account-dropdown {
-        right: -5px;
-        width: 300px;
+/* 4. Komponen kecil --------------------------------------------------------- */
+@layer components {
+    /* -- Kartu Produk Katalog -- */
+    .produk-card {
+        @apply flex h-full flex-col overflow-hidden rounded-[22px] border border-line-soft bg-white shadow-soft;
     }
+    .produk-thumb {
+        @apply relative aspect-[4/5] w-full shrink-0 overflow-hidden bg-paper;
+    }
+    .produk-thumb img {
+        @apply h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105;
+    }
+    .produk-body {
+        @apply flex flex-1 flex-col justify-between p-4 sm:p-5;
+    }
+    /* -- Lebar konten halaman -- */
+    .wrap { @apply mx-auto w-full max-w-[1120px] px-4 sm:px-6 min-[1440px]:max-w-[1200px]; }
+
+    /* -- Tombol -- */
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold
+               transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+        min-height: 2.75rem;
+    }
+    .btn-sm { @apply px-3.5 text-[13px]; min-height: 2.125rem; }
+    .btn-lg { @apply px-6 text-base; min-height: 3.375rem; }
+    .btn-primary { @apply bg-maroon text-white hover:bg-maroon-dark; }
+    .btn-outline { @apply border border-line bg-white text-ink hover:border-maroon hover:text-maroon; }
+    .btn-soft { @apply border border-line bg-white text-maroon hover:bg-blush; }
+    .btn-danger { @apply border border-danger bg-white text-danger hover:bg-danger hover:text-white; }
+
+    /* -- Input -- */
+    .field {
+        @apply h-11 w-full rounded-[10px] border border-line bg-blush-50 px-3.5 text-sm text-ink
+               placeholder:text-placeholder focus:border-maroon focus:ring-4 focus:ring-maroon/15 focus:outline-none;
+    }
+    textarea.field { @apply h-auto min-h-28 resize-y py-3 leading-relaxed; }
+    .field-error { @apply text-xs font-semibold text-danger; }
+    .label { @apply flex flex-col gap-2 text-sm font-semibold text-ink; }
+
+    /* -- Kartu putih -- */
+    .panel { @apply rounded-[22px] border border-line-soft bg-white shadow-soft; }
+
+    /* -- Badge status -- */
+    .badge { @apply inline-block rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap; }
+    .tag   { @apply inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap; }
+
+    /* status pesanan pelanggan (Pesanan::statusClass) */
+    .st-tunggu  { @apply bg-[#FFF1DB] text-[#7A4A00]; }
+    .st-proses  { @apply bg-blush text-maroon-dark; }
+    .st-siap,
+    .st-kirim   { @apply bg-[#EEF5FD] text-[#2D5B94]; }
+    .st-selesai { @apply bg-ok-soft text-ok; }
+    .st-batal   { @apply bg-[#F1ECED] text-muted; }
+
+    /* status admin (PesananController::STATUS, Bahan::status) */
+    .b-kuning { @apply bg-[#FFF1DB] text-[#7A4A00]; }
+    .b-ungu   { @apply bg-[#EFEAFB] text-[#5B3E96]; }
+    .b-biru   { @apply bg-[#EEF5FD] text-[#2D5B94]; }
+    .b-hijau  { @apply bg-ok-soft text-ok; }
+    .b-merah  { @apply bg-danger-soft text-danger; }
+    .b-abu    { @apply bg-[#F1ECED] text-muted; }
+
+    /* cara terima: kurir / pick up */
+    .tag-kurir  { @apply bg-[#EEF5FD] text-[#2D5B94]; }
+    .tag-pickup { @apply bg-[#FFF6E5] text-[#7A4A00]; }
+
+    /* -- Popup <dialog> -- */
+    .modal {
+        @apply m-auto max-h-[calc(100vh-48px)] w-[min(920px,calc(100%-32px))] rounded-[22px] border-0 bg-cream p-0
+               text-ink shadow-[0_24px_60px_rgb(42_26_30/0.25)] backdrop:bg-ink/45;
+    }
+    .modal[open] { animation: muncul .18s ease-out; }
+
+    /* -- Dashboard admin: kartu, tabel, isian form -- */
+    .kartu  { @apply rounded-[20px] border border-line bg-white p-4.5 sm:p-5.5; }
+    .kosong { @apply list-none py-6 text-center text-[13px] text-muted; }
+    .kode   { @apply inline-block rounded-md bg-[#F5E9EC] px-2 py-0.5 text-[11px] font-bold tracking-wide text-wine; }
+
+    .tabel { @apply w-full min-w-[720px] border-collapse text-[13px]; }
+    .tabel th { @apply border-b border-line bg-blush-50 p-4 text-left font-medium whitespace-nowrap text-muted; }
+    .tabel td { @apply border-b border-[#F7EEF0] px-4 py-3.5 align-middle; }
+    .tabel tbody tr:hover { @apply bg-blush-50; }
+    .tabel td small { @apply mt-0.5 block text-[11px] text-muted; }
+
+    .isian { @apply mb-3.5 flex flex-col gap-1.5 text-[13px]; }        /* <label class="isian"><span>Judul</span><input class="input"> */
+    .isian > span:first-child { @apply font-semibold; }
+    .input {
+        @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink
+               focus:border-maroon focus:outline-none disabled:bg-paper disabled:text-muted;
+    }
+    textarea.input { @apply resize-y; }
+
+    /* tombol ikon kecil (edit / hapus) */
+    .ikon { @apply flex size-8.5 items-center justify-center rounded-[10px] text-[15px] text-ink hover:bg-blush hover:text-maroon; }
+    .ikon-hapus { @apply text-danger hover:bg-danger-soft hover:text-danger; }
 }
+
+/* Latar lembut bermotif bulatan pink (halaman login, daftar, dll.) */
+@utility bg-kelopak {
+    background:
+        radial-gradient(circle at 0% 15%, #F8E1E6 0, transparent 22%),
+        radial-gradient(circle at 100% 80%, #F8E1E6 0, transparent 25%),
+        var(--color-cream);
+}
+/* Latar atas halaman (beranda, katalog) */
+@utility bg-sorot {
+    background: radial-gradient(circle at 50% 0%, var(--color-blush) 0, transparent 55%), var(--color-cream);
+}
+
+@keyframes muncul { from { opacity: 0; transform: translateY(12px); } }
+@keyframes toast-masuk { from { opacity: 0; transform: translateX(24px); } }   /* toast masuk dari kanan */
+@keyframes toast-waktu { to { transform: scaleX(0); } }                         /* garis waktu toast */

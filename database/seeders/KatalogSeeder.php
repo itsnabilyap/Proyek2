@@ -5,40 +5,45 @@ namespace Database\Seeders;
 use App\Models\Kategori;
 use App\Models\Produk;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class KatalogSeeder extends Seeder
 {
     public function run(): void
     {
-        $kategori = collect([
-            'Bucket Wisuda',
-            'Bucket Uang',
-            'Bucket Coklat',
-            'Bunga Kering / Artificial',
-        ])->mapWithKeys(fn ($nama) => [
-            $nama => Kategori::firstOrCreate(['nama_kategori' => $nama])->id_kategori,
-        ]);
-
-        // gambar = nama file di public/images/produk (boleh dikosongkan dulu)
-        $produk = [
-            ['Bucket Coklat', 'Bucket Coklat', 60000, 'Bucket coklat manis untuk hadiah orang tersayang.', 'bucket-coklat.jpg'],
-            ['Bunga Kering / Artificial', 'Bucket Tangkai Mawar Merah', 75000, 'Mawar merah elegan untuk ungkapan kasih sayang.', 'bucket-mawar-merah.jpg'],
-            ['Bucket Uang', 'Bucket Uang', 70000, 'Bucket unik yang cocok untuk hadiah wisuda dan ulang tahun.', 'bucket-uang.jpg'],
-            ['Bucket Wisuda', 'Bucket Wisuda', 70000, 'Bucket bunga dan boneka untuk merayakan kelulusan.', 'bucket-wisuda.jpg'],
-            ['Bunga Kering / Artificial', 'Bucket Thumbelina', 85000, 'Bucket berwarna pastel dengan tampilan manis.', 'bucket-thumbelina.jpg'],
-            ['Bunga Kering / Artificial', 'Bucket Satin Premium', 95000, 'Bucket elegan dengan kesan satin yang mewah.', 'bucket-satin-premium.jpg'],
+        // [nama, kategori, harga mulai, gambar, deskripsi]
+        $data = [
+            ['Bucket Coklat', 'Buket Coklat', 60000, 'bucket-coklat.jpg',
+                'Rangkaian coklat favorit dibalut wrapping cantik. Manis untuk ulang tahun, valentine, atau kejutan kecil.'],
+            ['Bucket Tangkai Mawar Merah', 'Buket Bunga', 75000, 'bucket-mawar-merah.jpg',
+                'Mawar merah pilihan dirangkai rapi, simbol cinta dan ketulusan. Cocok untuk anniversary dan momen romantis.'],
+            ['Bucket Uang', 'Buket Uang', 70000, 'bucket-uang.jpg',
+                'Uang dilipat dan dirangkai jadi buket unik. Harga adalah biaya rangkai, belum termasuk uang yang dirangkai.'],
+            ['Bucket Wisuda', 'Buket Wisuda', 70000, 'bucket-wisuda.jpg',
+                'Buket meriah untuk merayakan kelulusan. Bisa ditambah boneka atau kartu ucapan untuk sang wisudawan.'],
+            ['Bucket Thumbelina', 'Buket Bunga', 85000, 'bucket-thumbelina.jpg',
+                'Rangkaian bunga thumbelina mungil yang lembut dan manis. Hadiah sederhana yang tetap berkesan.'],
+            ['Bucket Satin Premium', 'Buket Satin', 95000, 'bucket-satin-premium.jpg',
+                'Bunga dari pita satin buatan tangan. Tidak layu, awet disimpan selamanya sebagai kenang-kenangan.'],
         ];
 
-        foreach ($produk as [$kat, $nama, $harga, $deskripsi, $gambar]) {
-            Produk::updateOrCreate(
-                ['nama_produk' => $nama],
-                [
-                    'id_kategori' => $kategori[$kat],
-                    'harga' => $harga,
-                    'deskripsi' => $deskripsi,
-                    'gambar' => $gambar,
-                ]
+        foreach ($data as [$nama, $kategori, $harga, $gambar, $deskripsi]) {
+            $kat = Kategori::firstOrCreate(
+                ['slug' => Str::slug($kategori)],
+                ['nama_kategori' => $kategori]
             );
+
+            $produk = Produk::create([
+                'kategori_id' => $kat->id,
+                'nama_produk' => $nama,
+                'slug' => Str::slug($nama),
+                'deskripsi' => $deskripsi,
+                'gambar' => $gambar,
+                'stok' => 10,
+            ]);
+
+            // Baru ukuran termurah. Medium/Large ditambah saat halaman detail produk dibuat.
+            $produk->ukuran()->create(['nama_ukuran' => 'Small', 'harga' => $harga]);
         }
     }
 }

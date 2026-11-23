@@ -1,71 +1,37 @@
 @extends('layouts.app')
 
-@section('title', 'Reset Password | buket.imy')
+@section('title', 'Ganti Password')
+@section('main-class', 'bg-kelopak flex min-h-[60vh] justify-center px-4 pt-12 pb-20')
+@section('tanpa-flash', '1')
 
 @section('content')
+<div class="w-full max-w-[400px]">
+    <h1 class="text-center text-3xl font-bold text-maroon">Ganti Password</h1>
+    <p class="mt-1.5 mb-5.5 text-center text-sm">Buat password baru untuk akunmu.</p>
 
-<div class="auth-container">
-    <h1 class="auth-title">Reset Kata Sandi</h1>
-
-    <p class="auth-subtitle">
-       Silakan masukkan kata sandi baru Anda untuk memperbarui keamanan akun.
-    </p>
-
-    @if (session('status'))
-        <div class="alert">
-            {{ session('status') }}
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert">
-            @foreach ($errors->all() as $error)
-                <div>{{ $error }}</div>
-            @endforeach
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('password.update') }}">
+    <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-3" novalidate>
         @csrf
+        <input type="hidden" name="token" value="{{ $token }}">
 
-        <input
-            type="hidden"
-            name="token"
-            value="{{ $token }}"
-        >
+        <div class="flex flex-col gap-1">
+            <label for="email" class="sr-only">Email</label>
+            <input id="email" name="email" type="email" placeholder="Email" value="{{ old('email', $email) }}" autocomplete="email" required
+                   @class(['field', 'border-danger' => $errors->has('email')])>
+            @error('email') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
 
-        <input
-            type="hidden"
-            name="email"
-            value="{{ old('email', $email) }}"
-        >
+        <div class="flex flex-col gap-1">
+            <label for="password" class="sr-only">Password baru</label>
+            <x-password id="password" placeholder="Password Baru" autocomplete="new-password" required />
+            @error('password') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
 
-        <input
-            class="form-input"
-            type="password"
-            name="password"
-            placeholder="Kata Sandi Baru"
-            autocomplete="new-password"
-            minlength="8"
-            required
-        >
+        <div class="flex flex-col gap-1">
+            <label for="password_confirmation" class="sr-only">Konfirmasi password baru</label>
+            <x-password id="password_confirmation" label="konfirmasi password" placeholder="Konfirmasi Password Baru" autocomplete="new-password" required />
+        </div>
 
-        <input
-            class="form-input"
-            type="password"
-            name="password_confirmation"
-            placeholder="Konfirmasi Kata Sandi Baru"
-            autocomplete="new-password"
-            minlength="8"
-            required>
-
-        <button type="submit" class="primary-button">
-            Ubah Kata Sandi
-        </button>
-
-        <a href="{{ route('login') }}" class="secondary-link">
-            Kembali ke Login
-        </a>
+        <button type="submit" class="btn btn-primary self-start rounded-[10px] px-6.5 font-bold">Simpan Password</button>
     </form>
 </div>
 @endsection

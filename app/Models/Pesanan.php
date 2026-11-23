@@ -5,94 +5,160 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Pesanan extends Model
 {
     protected $table = 'pesanan';
-    protected $primaryKey = 'id_pesanan';
 
     protected $fillable = [
-        'id_pelanggan',
-        'tanggal_pesanan',
-        'status_pesanan',
-        'total_harga',
-        'alamat_pengiriman',
-        'catatan',
-        'metode_pengambilan',
-        'nama_penerima',
-        'no_whatsapp',
-        'tanggal_pengiriman',
-        'slot_waktu',
-        'layanan_kurir',
-        'ongkir',
-        'metode_pembayaran',
-        'dibayar_pada',
+        'user_id', 'metode_pengiriman', 'layanan_kurir', 'nama_penerima', 'no_whatsapp',
+        'alamat', 'patokan', 'tanggal', 'slot_waktu', 'catatan_florist',
+        'subtotal', 'ongkir', 'total_harga', 'metode_pembayaran', 'status_pesanan', 'bahan_dipotong_at',
     ];
 
-    public const ALAMAT_TOKO = 'Jl. Tridaya Barat, Karanganyar, Kec. Indramayu, Kabupaten Indramayu, Jawa Barat 45213, Indonesia';
-
-    public const SLOT_WAKTU = [
-        '08.00 - 10.00 WIB',
-        '10.00 - 12.00 WIB',
-        '13.00 - 15.00 WIB',
-        '15.00 - 17.00 WIB',
+    /** Harga kurir ditentukan di sini, bukan dari form. */
+    public const KURIR = [
+        'motor' => ['nama' => 'Kurir Instan Motor', 'ongkir' => 15000,
+                    'ket' => 'Cocok untuk buket ukuran Small sampai Medium. Lebih cepat dan ekonomis.'],
+        'mobil' => ['nama' => 'Kurir Mobil AC (Buket Besar / Premium)', 'ongkir' => 65000,
+                    'ket' => 'Untuk buket Large, giant bouquet, rangkaian papan, atau pengiriman jarak jauh.'],
     ];
 
-    public const LAYANAN_KURIR = [
-        'motor' => [
-            'nama' => 'Kurir Instan Motor',
-            'tarif' => 15000,
-            'info' => 'Cocok untuk buket ukuran kecil - sedang. Lebih cepat dan ekonomis.',
-        ],
-        'mobil' => [
-            'nama' => 'Kurir Mobil AC Khusus Bucket Besar / Premium',
-            'tarif' => 65000,
-            'info' => 'Cocok untuk buket ukuran besar/giant bouquet, rangkaian bunga papan/vas premium, atau pengiriman jarak jauh.',
-        ],
-    ];
-
-    public const PEMBAYARAN = [
-        'QRIS' => ['nama' => 'QRIS', 'info' => 'Dana/GoPay/OVO'],
-        'BCA_VA' => ['nama' => 'BCA VA', 'info' => 'Virtual Account'],
-    ];
-
-    public function getNomorAttribute(): string
-    {
-        return 'B-' . str_pad((string) $this->id_pesanan, 3, '0', STR_PAD_LEFT);
-    }
+    public const SLOT = ['09.00 – 11.00 WIB', '11.00 – 13.00 WIB', '13.00 – 15.00 WIB', '15.00 – 17.00 WIB', '17.00 – 19.00 WIB'];
 
     protected function casts(): array
     {
-        return [
-            'tanggal_pesanan' => 'datetime',
-            'total_harga' => 'decimal:2',
-            'ongkir' => 'decimal:2',
-            'tanggal_pengiriman' => 'date',
-            'dibayar_pada' => 'datetime',
-        ];
+        return ['bahan_dipotong_at' => 'datetime', 'tanggal' => 'date', 'subtotal' => 'integer', 'ongkir' => 'integer', 'total_harga' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        // Kode dibuat dari id, jadi diisi setelah baris tersimpan.
+        static::created(function (Pesanan $pesanan) {
+            $pesanan->kode_pesanan = 'BKT-' . str_pad((string) $pesanan->id, 4, '0', STR_PAD_LEFT);
+            $pesanan->saveQuietly();
+        });
     }
 
     public function pelanggan(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'id_pelanggan', 'id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function detailPesanan(): HasMany
     {
-        return $this->hasMany(
-            DetailPesanan::class,
-            'id_pesanan',
-            'id_pesanan'
-        );
+        return $this->hasMany(DetailPesanan::class);
     }
 
-    public function customPesanan(): HasOne
+    public function pembayaran(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasOne(
-            CustomPesanan::class,
-            'id_pesanan',
-            'id_pesanan'
-        );
+        return $this->hasMany(Pembayaran::class);
+    }
+    
+    /** Batalkan pesanan + kembalikan stok. */
+    public function batalkan(): void
+    {
+        if ($this->status_pesanan !== 'menunggu_pembayaran') {
+            return;
+        }
+    
+        foreach ($this->detailPesanan as $item) {
+            if ($item->produk_id) {
+                Produk::whereKey($item->produk_id)->increment('stok', $item->jumlah);
+            }
+        }
+    
+        $this->update(['status_pesanan' => 'dibatalkan']);
+
+        // Tagihan request custom batal → lepaskan, supaya pelanggan bisa bayar ulang
+        Custom::where('pesanan_id', $this->id)->update(['pesanan_id' => null]);
+    }
+
+        /** Label dan warna setiap status. */
+    public const STATUS = [
+        'menunggu_pembayaran' => ['Menunggu Pembayaran', 'st-tunggu'],
+        'dirangkai'           => ['Diproses', 'st-proses'],
+        'siap_dikirim'        => ['Siap Dikirim', 'st-siap'],
+        'siap_diambil'        => ['Siap Diambil', 'st-siap'],
+        'dikirim'             => ['Dikirim', 'st-kirim'],
+        'selesai'             => ['Selesai', 'st-selesai'],
+        'dibatalkan'          => ['Dibatalkan', 'st-batal'],
+    ];
+    
+    public function testimoni(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Testimoni::class);
+    }
+    
+    public function statusLabel(): string
+    {
+        return self::STATUS[$this->status_pesanan][0] ?? $this->status_pesanan;
+    }
+    
+    public function statusClass(): string
+    {
+        return self::STATUS[$this->status_pesanan][1] ?? '';
+    }
+    
+    /**
+     * Langkah progres: [label, keterangan, sudah lewat?]
+     */
+    public function langkahProgres(): array
+    {
+        $urutan = $this->metode_pengiriman === 'pickup'
+            ? ['dirangkai' => 'Dirangkai', 'siap_diambil' => 'Siap Diambil', 'selesai' => 'Selesai']
+            : ['dirangkai' => 'Dirangkai', 'siap_dikirim' => 'Siap Dikirim', 'dikirim' => 'Dikirim', 'selesai' => 'Selesai'];
+    
+        $posisi = array_search($this->status_pesanan, array_keys($urutan), true);
+    
+        $langkah = [['Dibayar', true]];
+        $i = 0;
+        foreach ($urutan as $label) {
+            $langkah[] = [$label, $posisi !== false && $i <= $posisi];
+            $i++;
+        }
+    
+        return $langkah;
+    }
+
+    /**
+     * Total bahan yang dibutuhkan pesanan ini menurut resep tiap ukuran.
+     * @return \Illuminate\Support\Collection<int, array{bahan: Bahan, jumlah: int}>  (kunci = bahan_id)
+     */
+    public function kebutuhanBahan(): \Illuminate\Support\Collection
+    {
+        $this->loadMissing('detailPesanan.ukuranProduk.bahan');
+
+        $butuh = collect();
+        foreach ($this->detailPesanan as $d) {
+            foreach ($d->ukuranProduk?->bahan ?? [] as $b) {   // pesanan custom tidak punya resep
+                $lama = $butuh[$b->id]['jumlah'] ?? 0;
+                $butuh[$b->id] = ['bahan' => $b, 'jumlah' => $lama + $b->pivot->jumlah * $d->jumlah];
+            }
+        }
+
+        return $butuh;
+    }
+
+    /**
+     * Kurangi stok bahan sesuai resep (sekali saja per pesanan). Tercatat di riwayat stok.
+     * @return array<int, string> daftar bahan yang stoknya kurang, untuk peringatan ke admin
+     */
+    public function potongBahan(): array
+    {
+        if ($this->bahan_dipotong_at) return [];
+
+        $kurang = [];
+        foreach ($this->kebutuhanBahan() as ['bahan' => $bahan, 'jumlah' => $jumlah]) {
+            $sisa = $bahan->fresh()->stok;
+            if ($sisa < $jumlah) {
+                $kurang[] = "{$bahan->nama_bahan} (butuh {$jumlah}, sisa {$sisa} {$bahan->satuan})";
+            }
+            $bahan->ubahStok(-$jumlah, 'keluar', "Dipakai pesanan {$this->kode_pesanan}");
+        }
+
+        $this->forceFill(['bahan_dipotong_at' => now()])->save();
+
+        return $kurang;
     }
 }

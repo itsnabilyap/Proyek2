@@ -15,13 +15,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(KatalogSeeder::class);
-
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        User::create([
+            'name' => 'Nitsi', 'username' => 'Nitsi', 'email' => 'admin@bucketimy.id',
+            'password' => 'admin1', 'role' => 'admin',
+        ]);
+
+        User::create([
+            'name' => 'Nabil', 'username' => 'Nabil', 'email' => 'owner@bucketimy.id',
+            'password' => 'owner1', 'role' => 'owner',
+        ]);
+        
+        $this->call([
+            KatalogSeeder::class,
+            UkuranProdukSeeder::class,
         ]);
     }
 }

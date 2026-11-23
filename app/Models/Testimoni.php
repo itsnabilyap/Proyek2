@@ -8,31 +8,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Testimoni extends Model
 {
     protected $table = 'testimoni';
-    protected $primaryKey = 'id_testimoni';
 
-    protected $fillable = [
-        'id_pelanggan',
-        'id_pesanan',
-        'isi_testimoni',
-        'rating',
-        'tanggal',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'rating' => 'integer',
-            'tanggal' => 'date',
-        ];
-    }
-
-    public function pelanggan(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'id_pelanggan', 'id');
-    }
+    protected $fillable = ['user_id', 'pesanan_id', 'rating', 'isi_testimoni'];
 
     public function pesanan(): BelongsTo
     {
-        return $this->belongsTo(Pesanan::class, 'id_pesanan', 'id_pesanan');
+        return $this->belongsTo(Pesanan::class);
+    }
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
