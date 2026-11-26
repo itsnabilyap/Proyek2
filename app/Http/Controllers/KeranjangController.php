@@ -74,6 +74,21 @@ class KeranjangController extends Controller
             ->where('kartu_ucapan', $data['kartu_ucapan'] ?? null)
             ->first();
 
+        // Stok habis / tidak cukup: tolak (jumlah di keranjang ikut dihitung)
+        $sudah = (int) $request->user()->keranjang()
+            ->whereHas('ukuran', fn ($q) => $q->where('produk_id', $produk->id))->sum('jumlah');
+        if ($produk->stok < 1) {
+            return back()->withInput()->withErrors(['jumlah' => "Stok {$produk->nama_produk} sedang habis."]);
+        }
+        if ($sudah + $data['jumlah'] > $produk->stok) {
+            $sisa = max(0, $produk->stok - $sudah);
+            return back()->withInput()->withErrors(['jumlah' => match (true) {
+                $sudah === 0 => "Stok tinggal {$produk->stok} buket.",
+                $sisa > 0    => "Stok tinggal {$produk->stok} buket, di keranjangmu sudah {$sudah}. Maksimal tambah {$sisa} lagi.",
+                default      => "Stok tinggal {$produk->stok} buket dan semuanya sudah ada di keranjangmu.",
+            }]);
+        }
+
         if ($item) {
             $item->increment('jumlah', $data['jumlah']);
         } else {

@@ -69,19 +69,6 @@
 
 /* 4. Komponen kecil --------------------------------------------------------- */
 @layer components {
-    /* -- Kartu Produk Katalog -- */
-    .produk-card {
-        @apply flex h-full flex-col overflow-hidden rounded-[22px] border border-line-soft bg-white shadow-soft;
-    }
-    .produk-thumb {
-        @apply relative aspect-[4/5] w-full shrink-0 overflow-hidden bg-paper;
-    }
-    .produk-thumb img {
-        @apply h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105;
-    }
-    .produk-body {
-        @apply flex flex-1 flex-col justify-between p-4 sm:p-5;
-    }
     /* -- Lebar konten halaman -- */
     .wrap { @apply mx-auto w-full max-w-[1120px] px-4 sm:px-6 min-[1440px]:max-w-[1200px]; }
 
@@ -122,7 +109,7 @@
     .st-selesai { @apply bg-ok-soft text-ok; }
     .st-batal   { @apply bg-[#F1ECED] text-muted; }
 
-    /* status admin (PesananController::STATUS, Bahan::status) */
+    /* status admin (PesananController::STATUS) */
     .b-kuning { @apply bg-[#FFF1DB] text-[#7A4A00]; }
     .b-ungu   { @apply bg-[#EFEAFB] text-[#5B3E96]; }
     .b-biru   { @apply bg-[#EEF5FD] text-[#2D5B94]; }

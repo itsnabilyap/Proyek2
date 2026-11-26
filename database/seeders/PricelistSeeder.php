@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Bahan;
 use App\Models\Kategori;
 use App\Models\Produk;
-use App\Models\UkuranProduk;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -18,8 +16,6 @@ use Illuminate\Support\Str;
  * Yang harganya "sesuai budget" (bunga Grande/Bulat/Jumbo, uang > 50 lembar, coklat request) TIDAK di sini,
  * tapi lewat halaman Custom (lihat Custom::JENIS).
  *
- * Juga membuat bahan dasar dan resep awal tiap ukuran (pita, kartu, floral foam, wrapping, bunga).
- * Resep yang sudah diatur admin tidak ditimpa.
  */
 class PricelistSeeder extends Seeder
 {
@@ -81,12 +77,15 @@ class PricelistSeeder extends Seeder
                 'varian_judul'   => $varian[0] ?? null,
                 'varian_pilihan' => $varian[1] ?? null,
                 'harga_bebas_min' => $hargaBebas[$slug] ?? null,
-                'gambar'         => $produk->gambar ?: $gambar,
                 'stok'           => $produk->exists ? $produk->stok : 10,
                 'aktif'          => true,
-                'ukuran_foto'    => null,
                 'deleted_at'     => null,
             ])->save();
+
+            // Foto: kalau produk belum punya foto sama sekali, pakai foto bawaan seeder
+            if ($gambar && ! $produk->galeri()->exists()) {
+                $produk->galeri()->create(['file' => $gambar, 'urutan' => 0]);
+            }
 
             $dipakai = [];
             foreach ($ukuran as [$namaUkuran, $harga, $ket]) {
@@ -99,41 +98,8 @@ class PricelistSeeder extends Seeder
 
         // Produk lama "Bucket Uang" sudah dipecah jadi 3 model → disembunyikan dari katalog.
         Produk::where('slug', 'bucket-uang')->update(['aktif' => false]);
-
-        $this->resepAwal();
     }
 
-    /**
-     * Resep dasar: semua buket pakai 1 pita, 1 kartu ucapan, 1 floral foam, 1 wrapping paper.
-     * Bucket Bunga ditambah bunga artificial sesuai jumlah tangkai (Small 3, Medium 6, Large 10).
-     * Hanya untuk ukuran yang BELUM punya resep, jadi isian admin tetap aman.
-     */
-    private function resepAwal(): void
-    {
-        $bahan = fn ($nama, $kategori, $satuan, $minimal) => Bahan::firstOrCreate(
-            ['nama_bahan' => $nama],
-            ['kategori' => $kategori, 'satuan' => $satuan, 'stok' => 0, 'stok_minimal' => $minimal],
-        );
-
-        $dasar = [
-            $bahan('Pita', 'Pita & Aksesori', 'pcs', 10)->id            => 1,
-            $bahan('Kartu ucapan', 'Kartu & Lainnya', 'pcs', 20)->id    => 1,
-            $bahan('Floral foam', 'Kartu & Lainnya', 'pcs', 10)->id     => 1,
-            $bahan('Wrapping paper', 'Wrapping', 'lembar', 20)->id      => 1,
-        ];
-        $bunga = $bahan('Bunga artificial', 'Bunga', 'tangkai', 30)->id;
-        $tangkai = ['Small' => 3, 'Medium' => 6, 'Large' => 10];
-
-        UkuranProduk::with('produk', 'bahan')->get()->each(function (UkuranProduk $u) use ($dasar, $bunga, $tangkai) {
-            if ($u->bahan->isNotEmpty() || ! $u->produk) return;
-
-            $resep = collect($dasar)->map(fn ($j) => ['jumlah' => $j])->all();
-            if ($u->produk->slug === 'bucket-bunga' && isset($tangkai[$u->nama_ukuran])) {
-                $resep[$bunga] = ['jumlah' => $tangkai[$u->nama_ukuran]];
-            }
-            $u->bahan()->sync($resep);
-        });
-    }
 
     /** [10 => 70000, ...] → [['10 lembar', 70000, 'Bahan + jasa, belum termasuk uang'], ...] */
     private function lembar(array $harga): array

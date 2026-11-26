@@ -21,9 +21,4 @@ class UkuranProduk extends Model
         return $this->belongsTo(Produk::class);
     }
 
-    /** Resep: bahan yang dipakai untuk 1 buket ukuran ini (jumlah di pivot). */
-    public function bahan(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(Bahan::class, 'resep_bahan')->withPivot('jumlah')->withTimestamps();
-    }
 }

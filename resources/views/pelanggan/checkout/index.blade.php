@@ -27,7 +27,12 @@
         @endforeach
     @endisset
 
-    <p class="mb-2 text-[11px] font-semibold tracking-[.12em] text-maroon">CHECKOUT</p>
+    {{-- Tombol kembali: ke keranjang, atau ke riwayat request kalau ini pembayaran request custom --}}
+    <a href="{{ isset($custom) ? route('custom.riwayat') : route('keranjang.index') }}"
+       class="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-maroon hover:underline">
+        <i class="bi bi-arrow-left"></i> {{ isset($custom) ? 'Kembali ke Request Custom' : 'Kembali ke Keranjang' }}
+    </a>
+
     <h1 class="mt-1 mb-2 font-serif text-[32px] font-medium sm:text-[42px]">Checkout Pesanan<em id="judulPickup" class="text-maroon" @if ($metode !== 'pickup') hidden @endif> · Ambil di Toko</em></h1>
     <p id="introKurir" class="mb-5 text-sm text-muted" @if ($metode === 'pickup') hidden @endif>
         Lengkapi detail penerima dan pilih kurir khusus agar buket tetap segar dan rapi sampai tujuan.
@@ -210,7 +215,6 @@
             <button type="submit" class="btn btn-lg btn-primary shadow-btn">
                 <span data-kurir>Konfirmasi &amp; Bayar Sekarang</span>
                 <span data-pickup>Konfirmasi &amp; Bayar, Ambil di Toko</span>
-                <i class="bi bi-arrow-right"></i>
             </button>
         </aside>
     </div>

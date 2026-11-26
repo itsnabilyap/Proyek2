@@ -15,7 +15,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PelangganController;
 use App\Http\Controllers\Admin\PesananController as AdminPesananController;
 use App\Http\Controllers\Admin\ProdukController;
-use App\Http\Controllers\Admin\BahanController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\CustomController as AdminCustomController;
@@ -38,12 +37,11 @@ Route::middleware('guest')->group(function () {
         ->name('admin.login.process');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('/custom', [CustomController::class, 'create'])->name('custom.create');
-    Route::post('/custom', [CustomController::class, 'store'])
-        ->middleware('throttle:5,1')
-        ->name('custom.store');
-});
+// Request custom: form boleh dibuka tanpa login. Kirim request wajib login (dicek di CustomController::store).
+Route::get('/custom', [CustomController::class, 'create'])->name('custom.create');
+Route::post('/custom', [CustomController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('custom.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
@@ -64,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/akun/profil', [AkunController::class, 'updateProfil'])->name('akun.profil');
     Route::put('/akun/password', [AkunController::class, 'updatePassword'])->middleware('throttle:5,1')->name('akun.password');
     Route::delete('/akun', [AkunController::class, 'destroy'])->middleware('throttle:3,1')->name('akun.destroy');
+    Route::get('/custom/riwayat', [CustomController::class, 'riwayat'])->name('custom.riwayat');
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan.index');
     Route::patch('/pesanan/{pesanan:kode_pesanan}/diterima', [PesananController::class, 'terima'])->name('pesanan.terima');
     Route::post('/pesanan/{pesanan:kode_pesanan}/ulasan', [PesananController::class, 'ulasan'])->name('pesanan.ulasan');
@@ -84,7 +83,6 @@ Route::middleware(['auth', 'role:admin,owner'])
         Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
         Route::get('/pelanggan', [PelangganController::class, 'index'])->name('pelanggan.index');
         Route::get('/pelanggan/{pelanggan}', [PelangganController::class, 'show'])->name('pelanggan.show');
-        Route::get('/bahan', [BahanController::class, 'index'])->name('bahan.index');
 
         Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
         Route::put('/pengaturan/akun', [PengaturanController::class, 'updateAkun'])->name('pengaturan.akun');
@@ -104,14 +102,9 @@ Route::middleware(['auth', 'role:admin,owner'])
             Route::patch('/produk/{produk}/tampil', [ProdukController::class, 'toggle'])->name('produk.toggle');
             Route::patch('/produk/{produk}/stok', [ProdukController::class, 'tambahStok'])->name('produk.stok');
             Route::delete('/produk/{produk}', [ProdukController::class, 'destroy'])->name('produk.destroy');
-            Route::get('/produk/{produk}/resep', [\App\Http\Controllers\Admin\ResepController::class, 'edit'])->name('produk.resep.edit');
-            Route::put('/produk/{produk}/resep', [\App\Http\Controllers\Admin\ResepController::class, 'update'])->name('produk.resep.update');
 
-            Route::post('/bahan', [BahanController::class, 'store'])->name('bahan.store');
-            Route::put('/bahan/{bahan}', [BahanController::class, 'update'])->name('bahan.update');
-            Route::patch('/bahan/{bahan}/stok', [BahanController::class, 'tambahStok'])->name('bahan.stok');
-            Route::delete('/bahan/{bahan}', [BahanController::class, 'destroy'])->name('bahan.destroy');
             Route::patch('/custom/{custom}', [AdminCustomController::class, 'update'])->name('pesanan.custom.update');
+            Route::post('/custom/{custom}/balas', [AdminCustomController::class, 'balas'])->name('pesanan.custom.balas');
         });
         
             Route::middleware('role:owner')->group(function () {

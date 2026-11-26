@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\GambarProduk;
 use App\Models\Kategori;
 use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProdukController extends Controller
@@ -19,6 +21,7 @@ class ProdukController extends Controller
 
     /** Batas jumlah ukuran per produk. */
     public const MAKS_UKURAN = 10;
+    public const MAKS_FOTO = 8;
 
     public function index(Request $r): View
     {
@@ -67,7 +70,7 @@ class ProdukController extends Controller
 
     public function edit(Request $r, Produk $produk): View
     {
-        $produk->load('ukuran');
+        $produk->load(['ukuran', 'galeri']);
     
         return view($r->ajax() ? 'admin.produk._form' : 'admin.produk.edit', [
             'produk' => $produk,
@@ -112,8 +115,13 @@ class ProdukController extends Controller
             'kategori_id'         => ['required', 'exists:kategori,id'],
             'deskripsi'           => ['nullable', 'string', 'max:2000'],
             'stok'                => ['required', 'integer', 'min:0'],
-            'gambar'              => [$produk->exists ? 'nullable' : 'required', 'image', 'max:2048'],
-            'ukuran_foto'         => ['nullable', 'string', 'max:30'],
+            'foto'                => ['nullable', 'array', 'max:' . self::MAKS_FOTO],
+            'foto.*'              => ['image', 'max:2048'],
+            'hapus_foto'          => ['nullable', 'array'],
+            'hapus_foto.*'        => ['integer'],
+            'sampul'              => ['nullable', 'integer'],
+            'ukuran_foto_id'      => ['nullable', 'array'],
+            'ukuran_foto_id.*'    => ['nullable', 'integer'],
             'varian_judul'        => ['nullable', 'string', 'max:50', 'required_with:varian_pilihan'],
             'varian_pilihan'      => ['nullable', 'string', 'max:500', 'required_with:varian_judul'],
             'ukuran'              => ['required', 'array', 'min:1', 'max:' . self::MAKS_UKURAN],
@@ -122,10 +130,10 @@ class ProdukController extends Controller
             'ukuran.*.harga'      => ['required', 'integer', 'min:1000'],
             'ukuran.*.label'      => ['nullable', 'string', 'max:30'],
             'ukuran.*.keterangan' => ['nullable', 'string', 'max:150'],
-            'ukuran.*.detail'     => ['nullable', 'string', 'max:1000'],
         ], [
-            'gambar.required'               => 'Foto produk wajib diunggah.',
-            'gambar.max'                    => 'Ukuran foto maksimal 2 MB.',
+            'foto.max'                      => 'Maksimal ' . self::MAKS_FOTO . ' foto per produk.',
+            'foto.*.image'                  => 'File harus berupa gambar.',
+            'foto.*.max'                    => 'Ukuran tiap foto maksimal 2 MB.',
             'ukuran.required'               => 'Isi minimal satu ukuran beserta harganya.',
             'ukuran.max'                    => 'Maksimal ' . self::MAKS_UKURAN . ' ukuran per produk.',
             'ukuran.*.nama.required'        => 'Nama ukuran wajib diisi.',
@@ -143,16 +151,17 @@ class ProdukController extends Controller
             $slug = "{$dasar}-{$i}";
         }
 
-        // Foto
-        if ($r->hasFile('gambar')) {
-            $file = $r->file('gambar');
-            $nama = $slug . '-' . time() . '.' . $file->extension();
-            $file->move(public_path('images/produk'), $nama);
+        // Foto: hitung sisa foto lama (yang tidak dicentang hapus) + foto baru. Minimal 1, maksimal MAKS_FOTO.
+        $lama = $produk->exists ? $produk->galeri()->get() : collect();
+        $hapus = collect($data['hapus_foto'] ?? [])->map(fn ($id) => (int) $id);
+        $sisa = $lama->reject(fn ($g) => $hapus->contains($g->id))->values();
+        $baru = $r->file('foto', []);
 
-            if ($produk->gambar && is_file(public_path('images/produk/' . $produk->gambar))) {
-                @unlink(public_path('images/produk/' . $produk->gambar));
-            }
-            $produk->gambar = $nama;
+        if ($sisa->count() + count($baru) < 1) {
+            throw ValidationException::withMessages(['foto' => 'Minimal 1 foto produk.']);
+        }
+        if ($sisa->count() + count($baru) > self::MAKS_FOTO) {
+            throw ValidationException::withMessages(['foto' => 'Total foto maksimal ' . self::MAKS_FOTO . '. Hapus beberapa foto lama dulu.']);
         }
 
         // Varian: satu pilihan per baris, kosong & kembar dibuang
@@ -166,7 +175,6 @@ class ProdukController extends Controller
                 'kategori_id'    => $data['kategori_id'],
                 'deskripsi'      => $data['deskripsi'] ?? null,
                 'stok'           => $data['stok'],
-                'ukuran_foto'    => $data['ukuran_foto'] ?? null,
                 'varian_judul'   => $pilihan ? $data['varian_judul'] : null,
                 'varian_pilihan' => $pilihan ?: null,
                 'aktif'          => $r->boolean('aktif'),
@@ -185,7 +193,6 @@ class ProdukController extends Controller
                     'label'       => $u['label'] ?? null,
                     'harga'       => $u['harga'],
                     'keterangan'  => $u['keterangan'] ?? null,
-                    'detail'      => $this->bacaDetail($u['detail'] ?? ''),
                 ])->save();
 
                 $dipakai[] = $ukuran->id;
@@ -193,19 +200,38 @@ class ProdukController extends Controller
             \App\Models\UkuranProduk::where('produk_id', $produk->id)->whereNotIn('id', $dipakai)->delete();
         });
 
+        $this->simpanFoto($produk, $lama, $sisa, $baru, $slug, $data['sampul'] ?? null, $data['ukuran_foto_id'] ?? []);
+
         return $produk;
     }
 
-    /** "Tinggi: 45 cm" per baris → ['Tinggi' => '45 cm'] */
-    private function bacaDetail(string $teks): ?array
+    /**
+     * Foto produk (tabel gambar_produk): hapus yang dicentang, simpan yang baru,
+     * lalu atur urutan. Foto "sampul" ditaruh paling depan (urutan 0).
+     */
+    private function simpanFoto(Produk $produk, $lama, $sisa, array $baru, string $slug, ?int $sampul, array $ukuranFoto = []): void
     {
-        $hasil = collect(preg_split('/\r\n|\n/', $teks))
-            ->map(fn ($baris) => array_map('trim', explode(':', $baris, 2)))
-            ->filter(fn ($p) => count($p) === 2 && $p[0] !== '')
-            ->mapWithKeys(fn ($p) => [$p[0] => $p[1]])
-            ->all();
+        // Foto ukuran apa: hanya boleh ukuran milik produk ini, selain itu dikosongkan
+        $ukuranSah = $produk->ukuran()->pluck('id');
+        $sisa->each(function (GambarProduk $g) use ($ukuranFoto, $ukuranSah) {
+            $id = (int) ($ukuranFoto[$g->id] ?? 0);
+            $g->ukuran_produk_id = $ukuranSah->contains($id) ? $id : null;
+        });
 
-        return $hasil ?: null;
+        $lama->diff($sisa)->each(function (GambarProduk $g) {
+            $g->hapusFile();
+            $g->delete();
+        });
+
+        foreach (array_values($baru) as $i => $file) {
+            $nama = $slug . '-' . time() . $i . '.' . $file->extension();
+            $file->move(public_path('images/produk'), $nama);
+            $sisa->push($produk->galeri()->create(['file' => $nama, 'urutan' => 99]));
+        }
+
+        // Urutan: foto sampul pilihan admin di depan, sisanya mengikuti urutan lama, foto baru di belakang.
+        [$depan, $lain] = $sisa->partition(fn ($g) => $g->id === $sampul);
+        $depan->concat($lain)->values()->each(fn ($g, $i) => $g->fill(['urutan' => $i])->save());
     }
 
     public function tambahStok(Request $r, Produk $produk): RedirectResponse

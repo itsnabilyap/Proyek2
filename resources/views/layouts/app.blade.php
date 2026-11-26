@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
+{{-- overflow-x-clip: pengaman supaya halaman tidak pernah bisa digeser ke samping di HP --}}
+<body class="flex min-h-dvh flex-col overflow-x-clip">
 
 {{-- ========== HEADER / NAVBAR ========== --}}
 <header class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line-soft bg-white px-4 py-2.5 sm:px-5 lg:flex-nowrap lg:px-7 xl:px-11 xl:py-3">
@@ -25,10 +26,10 @@
             [route('home') . '#tentang-kami', 'Tentang Kami', false],
         ];
     @endphp
-    <nav data-nav class="order-3 flex w-full gap-1 overflow-x-auto sm:justify-center lg:order-none lg:w-auto lg:gap-2">
+    <nav data-nav class="order-3 flex w-full justify-between gap-0.5 overflow-x-auto sm:justify-center sm:gap-1 lg:order-none lg:w-auto lg:gap-2">
         @foreach ($menuNav as [$href, $label, $aktif])
             <a href="{{ $href }}" @if ($aktif) aria-current="page" @endif
-               class="shrink-0 rounded-full px-3 py-1.5 text-[13px] text-ink-soft transition-colors hover:bg-blush-50 hover:text-maroon aria-[current=page]:bg-blush aria-[current=page]:font-semibold aria-[current=page]:text-maroon sm:px-4 sm:py-2 sm:text-sm">
+               class="shrink-0 rounded-full px-1 py-1.5 text-xs whitespace-nowrap text-ink-soft min-[24.375rem]:px-[5px] min-[24.375rem]:text-[12.5px] transition-colors hover:bg-blush-50 hover:text-maroon aria-[current=page]:bg-blush aria-[current=page]:font-semibold aria-[current=page]:text-maroon sm:px-4 sm:py-2 sm:text-sm">
                 {{ $label }}
             </a>
         @endforeach
@@ -38,11 +39,7 @@
         @auth
             @php
                 $user = auth()->user();
-                $kata = preg_split('/\s+/', trim($user->name));
-                $inisial = strtoupper(substr($kata[0], 0, 1) . substr($kata[1] ?? '', 0, 1));
-                $namaDepan = $kata[0];
                 $jumlahKeranjang = $user->keranjang()->sum('jumlah');
-                $pesananAktif = $user->pesanan()->whereNotIn('status_pesanan', ['selesai', 'dibatalkan'])->count();
             @endphp
 
             {{-- Keranjang --}}
@@ -55,58 +52,7 @@
             </a>
 
             {{-- Profil + dropdown --}}
-            <div class="relative">
-                <button type="button" id="accountButton" aria-expanded="false" aria-controls="accountDropdown"
-                        class="group inline-flex h-[46px] items-center gap-2.5 rounded-full border border-line bg-white py-0 pr-3.5 pl-1.5 transition-colors hover:border-maroon hover:bg-blush-50">
-                    <span class="inline-flex size-9 items-center justify-center rounded-full bg-maroon text-[13px] font-bold text-white">{{ $inisial }}</span>
-                    <span class="text-[15px] font-semibold max-sm:hidden">{{ $namaDepan }}</span>
-                    <i class="bi bi-chevron-down text-xs text-muted transition-transform group-aria-expanded:rotate-180"></i>
-                </button>
-
-                <div id="accountDropdown" hidden
-                     class="absolute top-[calc(100%+12px)] right-0 z-30 w-[min(340px,calc(100vw-32px))] rounded-[20px] border border-line-soft bg-white p-4.5 shadow-pop">
-                    <div class="flex items-center gap-3.5 px-1.5 pt-1 pb-4">
-                        <span class="inline-flex size-13 shrink-0 items-center justify-center rounded-full bg-maroon text-base font-bold text-white">{{ $inisial }}</span>
-                        <div class="flex min-w-0 flex-col">
-                            <strong class="text-base">{{ $user->name }}</strong>
-                            <small class="truncate text-[13px] text-muted">{{ $user->email }}</small>
-                        </div>
-                    </div>
-
-                    @php
-                        $menuAkun = [
-                            [url('/pesanan'), 'bi-bag', 'Pesanan Saya', 'Status dan riwayat pesanan', $pesananAktif],
-                            [route('akun.edit'), 'bi-person', 'Pengaturan Akun', 'Edit profil dan ganti kata sandi', 0],
-                            ['https://wa.me/6283184710305', 'bi-chat', 'Bantuan', 'Chat admin via WhatsApp', 0],
-                        ];
-                    @endphp
-                    @foreach ($menuAkun as [$href, $ikon, $judul, $ket, $angka])
-                        <a href="{{ $href }}" @if (str_starts_with($href, 'https://wa.me')) target="_blank" rel="noopener noreferrer" @endif
-                           class="group/link flex w-full items-center gap-3.5 rounded-xl px-1.5 py-2 transition-colors hover:bg-blush focus-visible:bg-blush focus-visible:outline-none">
-                            <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-blush text-base text-maroon transition-colors group-hover/link:bg-maroon group-hover/link:text-white">
-                                <i class="bi {{ $ikon }}"></i>
-                            </span>
-                            <span class="flex flex-1 flex-col">
-                                <strong class="text-sm font-semibold group-hover/link:text-maroon">{{ $judul }}</strong>
-                                <small class="text-xs text-muted">{{ $ket }}</small>
-                            </span>
-                            @if ($angka > 0)
-                                <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-maroon px-1.5 text-xs font-bold text-white">{{ $angka }}</span>
-                            @endif
-                        </a>
-                    @endforeach
-
-                    <form action="{{ route('logout') }}" method="POST" class="mt-2 border-t border-line-soft pt-2">
-                        @csrf
-                        <button type="submit" class="group/link flex w-full items-center gap-3.5 rounded-xl px-1.5 py-2 text-left transition-colors hover:bg-danger-soft">
-                            <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-danger-soft text-base text-danger transition-colors group-hover/link:bg-danger group-hover/link:text-white">
-                                <i class="bi bi-box-arrow-right"></i>
-                            </span>
-                            <strong class="text-sm text-danger">Keluar</strong>
-                        </button>
-                    </form>
-                </div>
-            </div>
+            <x-menu-akun />
         @else
             <a href="{{ route('register') }}" class="btn btn-soft min-h-[38px] border-maroon px-4 font-normal">Daftar</a>
             <a href="{{ route('login') }}" class="btn btn-primary min-h-[38px] px-4 font-normal">Masuk</a>
@@ -119,8 +65,10 @@
     <x-toast class="top-20" />
 @endif
 <x-konfirmasi />
+<x-lightbox />
 
-<main class="@yield('main-class')">
+{{-- flex-1: isi halaman mengisi sisa layar, jadi footer selalu menempel di bawah --}}
+<main class="flex-1 @yield('main-class')">
     @yield('content')
 </main>
 

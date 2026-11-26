@@ -14,50 +14,9 @@
 @endphp
 
 @section('content')
-<div class="wrap flex flex-col items-start gap-8 pt-12 pb-24 md:flex-row">
-    @include('pelanggan.akun._menu')
-
-    <section class="flex w-full min-w-0 flex-1 flex-col gap-6">
-        {{-- ===== REQUEST CUSTOM ===== --}}
-        @if ($requestCustom->isNotEmpty())
-            <div class="rounded-[20px] border border-line-soft bg-white">
-                <h2 class="border-b border-line-soft px-4 py-4 text-base font-bold sm:px-5.5">Request Custom</h2>
-                <ul class="divide-y divide-line-soft">
-                    @foreach ($requestCustom as $c)
-                        @php
-                            $lunas = $c->pesanan && ! in_array($c->pesanan->status_pesanan, ['menunggu_pembayaran', 'dibatalkan'], true);
-                            $menunggu = $c->pesanan?->status_pesanan === 'menunggu_pembayaran';
-                            [$label, $kelas] = match (true) {
-                                $lunas                      => ['Sudah dibayar', 'st-selesai'],
-                                $menunggu                   => ['Menunggu pembayaran', 'st-tunggu'],
-                                $c->status === 'disetujui'  => ['Disetujui · siap dibayar', 'st-siap'],
-                                $c->status === 'ditolak'    => ['Tidak bisa diproses', 'st-batal'],
-                                $c->status === 'dihubungi'  => ['Sedang dibahas via WA', 'st-proses'],
-                                default                     => ['Menunggu balasan admin', 'st-tunggu'],
-                            };
-                        @endphp
-                        <li class="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5.5">
-                            <div class="min-w-0 flex-1">
-                                <strong class="block text-[15px]">{{ $c->jenis_bucket }} <span class="text-xs font-normal text-muted">#{{ $c->id }}</span></strong>
-                                <small class="text-[13px] text-muted">
-                                    Dibutuhkan {{ $c->tanggal_dibutuhkan->translatedFormat('j M Y') }} ·
-                                    {{ $c->harga_final ? 'Harga final ' . $rupiah($c->harga_final) : 'Budget ' . $c->budget_label }}
-                                </small>
-                            </div>
-                            <span class="badge {{ $kelas }}">{{ $label }}</span>
-                            @if ($menunggu)
-                                <a href="{{ route('pembayaran.show', $c->pesanan) }}" class="btn btn-sm btn-primary rounded-full px-4">Lanjutkan Bayar</a>
-                            @elseif ($c->bisaDibayar())
-                                <a href="{{ route('checkout.index', ['custom' => $c->id]) }}" class="btn btn-sm btn-primary rounded-full px-4">Bayar Sekarang</a>
-                            @elseif ($lunas)
-                                <span class="text-xs text-muted">Lihat di daftar pesanan: <b class="text-ink">{{ $c->pesanan->kode_pesanan }}</b></span>
-                            @endif
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
+{{-- Menu akun pindah ke dropdown profil di header --}}
+<div class="wrap max-w-[880px] pt-12 pb-24">
+    <section class="flex w-full min-w-0 flex-col gap-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-[22px] font-bold">Pesanan Saya ({{ $pilihan['semua']['jumlah'] }})</h1>
             <form method="GET" action="{{ route('pesanan.index') }}" class="flex items-center gap-2.5 text-[13px] text-muted">
@@ -164,33 +123,49 @@
                         </dl>
                     </details>
 
-                    {{-- Ulasan --}}
+                    {{-- Ulasan: bisa diisi, lalu diedit lagi kapan saja --}}
                     @if ($p->status_pesanan === 'selesai')
-                        @if ($p->testimoni)
-                            <p class="rounded-xl bg-ok-soft px-4 py-3 text-[13px] text-ink-soft">
-                                <span class="mr-2 tracking-widest text-gold">{{ str_repeat('★', $p->testimoni->rating) }}{{ str_repeat('☆', 5 - $p->testimoni->rating) }}</span>
-                                {{ $p->testimoni->isi_testimoni ?: 'Terima kasih atas ulasannya!' }}
-                            </p>
-                        @else
-                            @php $bag = 'ulasan' . $p->id; @endphp
-                            <form method="POST" action="{{ route('pesanan.ulasan', $p) }}" class="flex flex-col gap-2 rounded-2xl border border-line-soft p-4">
+                        @php
+                            $t = $p->testimoni;
+                            $bag = 'ulasan' . $p->id;
+                            $adaError = $errors->getBag($bag)->any();
+                            // old() hanya dipakai untuk form yang barusan gagal, supaya tidak menular ke kartu lain
+                            $nilai = (int) ($adaError ? old('rating') : $t?->rating);
+                            $isi = $adaError ? old('isi_testimoni') : $t?->isi_testimoni;
+                        @endphp
+
+                        @if ($t)
+                            <div class="rounded-xl bg-ok-soft px-4 py-3 text-[13px] text-ink-soft">
+                                <span class="mr-2 tracking-widest text-gold">{{ str_repeat('★', $t->rating) }}{{ str_repeat('☆', 5 - $t->rating) }}</span>
+                                {{ $t->isi_testimoni ?: 'Terima kasih atas ulasannya!' }}
+                            </div>
+                        @endif
+
+                        @if ($t) <details class="group/ulasan" @if ($adaError) open @endif> @else <div> @endif
+                            @if ($t)
+                                <summary class="inline-flex cursor-pointer list-none items-center gap-1.5 text-[13px] font-semibold text-maroon hover:underline">
+                                    <i class="bi bi-pencil"></i> <span class="group-open/ulasan:hidden">Edit ulasan</span><span class="hidden group-open/ulasan:inline">Batal edit</span>
+                                </summary>
+                            @endif
+                            <form method="POST" action="{{ route('pesanan.ulasan', $p) }}" @class(['flex flex-col gap-2 rounded-2xl border border-line-soft p-4', 'mt-2.5' => $t])>
                                 @csrf
-                                <strong>Bagaimana buketnya?</strong>
-                                <small class="text-[12.5px] text-muted">Ulasanmu membantu pelanggan lain memilih buket.</small>
+                                <strong>{{ $t ? 'Ubah ulasanmu' : 'Bagaimana buketnya?' }}</strong>
+                                @unless ($t) <small class="text-[12.5px] text-muted">Ulasanmu membantu pelanggan lain memilih buket.</small> @endunless
                                 {{-- Bintang: urutan dibalik (5 → 1) supaya bintang di kiri ikut menyala saat dipilih / disorot --}}
                                 <fieldset class="flex flex-row-reverse justify-end gap-1">
                                     <legend class="sr-only">Beri bintang</legend>
                                     @for ($i = 5; $i >= 1; $i--)
-                                        <input type="radio" id="r{{ $p->id }}-{{ $i }}" name="rating" value="{{ $i }}" class="peer sr-only">
+                                        <input type="radio" id="r{{ $p->id }}-{{ $i }}" name="rating" value="{{ $i }}" @checked($nilai === $i) class="peer sr-only">
                                         <label for="r{{ $p->id }}-{{ $i }}" title="{{ $i }} bintang"
                                                class="peer text-[28px] leading-none text-[#E3CDD2] transition-colors hover:text-gold peer-checked:text-gold peer-hover:text-gold">★</label>
                                     @endfor
                                 </fieldset>
                                 @error('rating', $bag) <span class="field-error">{{ $message }}</span> @enderror
-                                <textarea name="isi_testimoni" maxlength="1000" placeholder="Ceritakan pengalamanmu (opsional)" class="field"></textarea>
-                                <button type="submit" class="{{ $btnUtama }} self-end">Kirim Ulasan</button>
+                                <textarea name="isi_testimoni" maxlength="1000" placeholder="Ceritakan pengalamanmu (opsional)" class="field">{{ $isi }}</textarea>
+                                @error('isi_testimoni', $bag) <span class="field-error">{{ $message }}</span> @enderror
+                                <button type="submit" class="{{ $btnUtama }} self-end">{{ $t ? 'Simpan Perubahan' : 'Kirim Ulasan' }}</button>
                             </form>
-                        @endif
+                        @if ($t) </details> @else </div> @endif
                     @endif
                 </div>
 

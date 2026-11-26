@@ -82,15 +82,8 @@ class PesananController extends Controller
             return back()->with('error', 'Status pesanan sudah berubah. Muat ulang halaman.');
         }
 
-        $selesaiDirangkai = $pesanan->status_pesanan === 'dirangkai';
         $pesanan->status_pesanan = $baru;
         $pesanan->save();
-
-        // Buket selesai dirangkai → stok bahan dipotong sesuai resep
-        $kurang = $selesaiDirangkai ? $pesanan->potongBahan() : [];
-        if ($kurang) {
-            session()->flash('error', 'Stok bahan tidak cukup, dicatat jadi 0: ' . implode(', ', $kurang) . '. Cek Stok Bahan.');
-        }
 
         // TODO: kirim notifikasi WhatsApp (kirimi.id) ke pelanggan
 

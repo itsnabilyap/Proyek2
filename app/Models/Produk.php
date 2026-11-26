@@ -14,7 +14,10 @@ class Produk extends Model
 
     protected $table = 'produk';
 
-    protected $fillable = ['kategori_id', 'nama_produk', 'slug', 'deskripsi', 'varian_judul', 'varian_pilihan', 'harga_bebas_min', 'gambar', 'stok', 'aktif'];
+    protected $fillable = ['kategori_id', 'nama_produk', 'slug', 'deskripsi', 'varian_judul', 'varian_pilihan', 'harga_bebas_min', 'stok', 'aktif'];
+
+    /** Sampul selalu ikut dimuat, karena dipakai hampir di semua halaman (katalog, keranjang, pesanan). */
+    protected $with = ['sampul'];
 
     protected function casts(): array
     {
@@ -151,27 +154,28 @@ class Produk extends Model
         $query->where('aktif', true);
     }
 
-    /** URL gambar, atau null kalau file belum diupload. */
-    public function getGambarUrlAttribute(): ?string
+    /** Semua foto produk, urut dari sampul. (Revisi: foto dipisah ke tabel gambar_produk) */
+    public function galeri(): HasMany
     {
-        if (! $this->gambar || ! file_exists(public_path('images/produk/' . $this->gambar))) {
-            return null;
-        }
-
-        return asset('images/produk/' . $this->gambar);
+        return $this->hasMany(GambarProduk::class)->orderBy('urutan')->orderBy('id');
     }
 
-    public function tabelPerbandingan(): array
+    /** Foto sampul = foto dengan urutan terkecil. */
+    public function sampul(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        $baris = [];
+        return $this->hasOne(GambarProduk::class)->ofMany(['urutan' => 'min', 'id' => 'min']);
+    }
 
-        foreach ($this->ukuran as $u) {
-            foreach ($u->detail ?? [] as $nama => $nilai) {
-                $baris[$nama][$u->id] = $nilai;
-            }
-        }
+    /** URL foto sampul, atau null kalau belum ada foto. */
+    public function getGambarUrlAttribute(): ?string
+    {
+        return $this->sampul?->url;
+    }
 
-        return $baris;
+    /** Daftar URL semua foto (untuk popup galeri). */
+    public function getSemuaGambarAttribute(): array
+    {
+        return $this->galeri->pluck('url')->filter()->values()->all();
     }
 
     public function produk(): \Illuminate\Database\Eloquent\Relations\BelongsTo

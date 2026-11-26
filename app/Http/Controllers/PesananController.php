@@ -42,10 +42,7 @@ class PesananController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Request custom milik pelanggan (yang belum selesai jadi pesanan lunas ditaruh di atas)
-        $requestCustom = $user->Custom()->with('pesanan')->latest()->take(5)->get();
-
-        return view('pelanggan.pesanan.index', compact('pesanan', 'pilihan', 'filter', 'requestCustom'));
+        return view('pelanggan.pesanan.index', compact('pesanan', 'pilihan', 'filter'));
     }
 
     /** Pelanggan menandai pesanan kurir sudah diterima. */
@@ -63,7 +60,6 @@ class PesananController extends Controller
     {
         abort_unless($pesanan->user_id === $request->user()->id, 404);
         abort_unless($pesanan->status_pesanan === 'selesai', 403);
-        abort_if($pesanan->testimoni()->exists(), 403);
 
         $data = $request->validateWithBag('ulasan' . $pesanan->id, [
             'rating'        => ['required', 'integer', Rule::in([1, 2, 3, 4, 5])],
@@ -72,8 +68,10 @@ class PesananController extends Controller
             'rating.required' => 'Pilih bintang dulu.',
         ]);
 
-        $pesanan->testimoni()->create([...$data, 'user_id' => $request->user()->id]);
+        // Satu pesanan satu ulasan: kalau sudah ada, ulasannya diperbarui (bisa diedit pelanggan)
+        $sudahAda = $pesanan->testimoni()->exists();
+        $pesanan->testimoni()->updateOrCreate([], [...$data, 'user_id' => $request->user()->id]);
 
-        return back()->with('status', 'Terima kasih atas ulasannya!');
+        return back()->with('status', $sudahAda ? 'Ulasan berhasil diperbarui.' : 'Terima kasih atas ulasannya!');
     }
 }

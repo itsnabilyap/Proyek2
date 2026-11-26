@@ -23,22 +23,18 @@
 <div class="wrap pt-10 pb-20">
 
     {{-- ===== KEPALA ===== --}}
-    <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <h1 class="mt-1 mb-2 font-serif text-[32px] font-medium sm:text-[42px]">Pembayaran Pesanan <em class="text-maroon">· {{ $pickup ? 'Ambil Sendiri (Pick Up)' : 'Kurir Pengiriman' }}</em></h1>
-            <p class="mb-5 text-sm text-muted">
-                Selesaikan pembayaran sebelum batas waktu agar pesanan dapat segera dirangkai{{ $pickup ? ' oleh florist kami' : ' dan dikirim tepat waktu' }}.
-            </p>
-        </div>
-        <p role="timer" class="mt-1 inline-flex items-center gap-2.5 rounded-full border border-[#F2C9C6] bg-danger-soft px-4.5 py-2.5 text-sm font-semibold text-danger">
+    <h1 class="mt-1 mb-2 font-serif text-[32px] font-medium sm:text-[42px]">Pembayaran Pesanan <em class="text-maroon">· {{ $pickup ? 'Ambil Sendiri (Pick Up)' : 'Kurir Pengiriman' }}</em></h1>
+    <p class="mb-5 text-sm text-muted">
+        Selesaikan pembayaran sebelum batas waktu agar pesanan dapat segera dirangkai{{ $pickup ? ' oleh florist kami' : ' dan dikirim tepat waktu' }}.
+    </p>
+
+    {{-- Sisa waktu bayar. (Tombol "Kurir Pengiriman" dihapus: cara terima sudah ada di judul & ringkasan) --}}
+    <div class="mb-5.5">
+        <p role="timer" class="inline-flex items-center gap-2.5 rounded-full border border-[#F2C9C6] bg-danger-soft px-4.5 py-2.5 text-sm font-semibold text-danger">
             <span class="size-2 rounded-full bg-danger"></span> Sisa Waktu Pembayaran:
             <strong id="countdown" data-deadline="{{ $pembayaran->kedaluwarsa_pada->toIso8601String() }}" class="font-mono text-base tracking-wider">--:--:--</strong>
         </p>
     </div>
-
-    <span class="mb-5.5 inline-flex items-center gap-2 rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-white">
-        <i class="bi {{ $pickup ? 'bi-shop' : 'bi-truck' }}"></i> {{ $pickup ? 'Ambil di Toko (Pick Up)' : 'Kurir Pengiriman' }}
-    </span>
 
     @if (session('info'))
         <p role="status" class="mb-4 rounded-[10px] bg-blush px-3.5 py-2.5 text-sm font-semibold text-maroon-dark">{{ session('info') }}</p>
@@ -94,12 +90,13 @@
 
                     @foreach ([['NOMOR VIRTUAL ACCOUNT', trim(chunk_split($pembayaran->nomor_va, 4, ' ')), $pembayaran->nomor_va, 'Salin Nomor', true],
                                ['TOTAL NOMINAL TAGIHAN', $rupiah($pembayaran->jumlah), $pembayaran->jumlah, 'Salin Nominal', false]] as [$judul, $tampil, $salin, $tombol, $va])
-                        <div class="{{ $kotakAbu }} flex flex-wrap items-center justify-between gap-3 px-5 py-4.5">
-                            <div>
+                        {{-- Angka + tombol salin sebaris. Kalau kolomnya sempit (HP, tablet 768–1023px) tombol turun ke bawah --}}
+                        <div class="{{ $kotakAbu }} flex items-center justify-between gap-3 px-5 py-4.5 max-sm:flex-wrap md:max-lg:flex-wrap">
+                            <div class="min-w-0">
                                 <small class="mb-1 block text-xs font-semibold tracking-wider text-muted">{{ $judul }}</small>
-                                <strong @class(['font-mono text-[22px] tracking-wider sm:text-[26px]' => $va, 'text-[22px] text-maroon sm:text-[28px]' => ! $va])>{{ $tampil }}</strong>
+                                <strong @class(['block font-mono text-lg tracking-wide whitespace-nowrap lg:text-lg xl:text-[22px]' => $va, 'text-[22px] text-maroon sm:text-[28px]' => ! $va])>{{ $tampil }}</strong>
                             </div>
-                            <button type="button" data-salin="{{ $salin }}" class="{{ $btnGaris }}">
+                            <button type="button" data-salin="{{ $salin }}" class="{{ $btnGaris }} shrink-0">
                                 <i class="bi bi-copy"></i> <span>{{ $tombol }}</span>
                             </button>
                         </div>
@@ -247,7 +244,7 @@
 
                 <form method="POST" action="{{ route('pembayaran.cek', $pesanan) }}">
                     @csrf
-                    <button type="submit" class="btn btn-lg btn-primary w-full shadow-btn">Saya Sudah Bayar / Cek Status <i class="bi bi-arrow-right"></i></button>
+                    <button type="submit" class="btn btn-lg btn-primary w-full shadow-btn">Saya Sudah Bayar / Cek Status</button>
                 </form>
             </aside>
 

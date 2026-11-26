@@ -7,6 +7,7 @@
     $ukuran = $produk->ukuran;
     $pilih = $ukuran->firstWhere('id', (int) old('ukuran_produk_id')) ?? $ukuran->first();
     $habis = $produk->stok < 1;
+    $maks = max(1, min(20, $produk->stok));   // jumlah maksimal = stok (paling banyak 20)
     $uang = $produk->adalahBucketUang();
     $varianAwal = old('varian', $produk->varian_pilihan[0] ?? null);
     $tawaran = $produk->tawaranCustom();
@@ -35,16 +36,43 @@
     <div class="flex flex-wrap items-start gap-10">
         {{-- ===== FOTO ===== --}}
         <div class="flex min-w-0 flex-[1_1_380px] flex-col gap-3">
-            <div class="relative aspect-[4/5] overflow-hidden rounded-[20px] bg-blush">
-                @if ($produk->gambar_url)
-                    <img src="{{ $produk->gambar_url }}" alt="{{ $produk->nama_produk }}" class="block size-full object-cover">
+            @php
+                // Foto + ukuran yang tampil di tiap foto (revisi: foto bisa ditandai ukurannya)
+                $galeri = $produk->galeri->filter(fn ($g) => $g->url)->values();
+                $foto = $galeri->pluck('url')->all();
+                $namaUkuran = $produk->ukuran->pluck('nama_ukuran', 'id');
+                $ukuranFoto = $galeri->map(fn ($g) => $namaUkuran[$g->ukuran_produk_id] ?? null)->all();   // per foto
+                $petaUkuran = $galeri->filter(fn ($g) => $g->ukuran_produk_id)->reverse()                     // ukuran → foto pertamanya
+                    ->mapWithKeys(fn ($g, $i) => [$g->ukuran_produk_id => $i])->all();
+            @endphp
+            {{-- Foto utama: klik untuk membuka popup galeri (bisa digeser) --}}
+            <button type="button" id="fotoUtama" class="group relative block aspect-[4/5] w-full overflow-hidden rounded-[20px] bg-blush outline-none focus-visible:ring-4 focus-visible:ring-maroon/30"
+                    @if ($foto) data-galeri='@json($foto)' data-mulai="0" data-judul="{{ $produk->nama_produk }}" aria-label="Perbesar foto {{ $produk->nama_produk }}"
+                    data-ukuran-foto='@json($ukuranFoto)' data-peta-ukuran='@json((object) $petaUkuran)' @else disabled @endif>
+                @if ($foto)
+                    <img src="{{ $foto[0] }}" alt="{{ $produk->nama_produk }}" class="block size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]">
+                    <span class="absolute right-4 bottom-4 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white">
+                        <i class="bi bi-arrows-fullscreen"></i> Klik untuk perbesar
+                    </span>
                 @else
                     <div class="flex size-full items-center justify-center text-[56px] text-rose"><i class="bi bi-flower1"></i></div>
                 @endif
-                @if ($produk->ukuran_foto)
-                    <span class="absolute top-4 left-4 rounded-full bg-white/90 px-3.5 py-1.5 text-[13px] font-semibold text-wine">Ukuran di foto: {{ $produk->ukuran_foto }}</span>
-                @endif
-            </div>
+                <span data-label-ukuran class="absolute top-4 left-4 rounded-full bg-white/90 px-3.5 py-1.5 text-[13px] font-semibold text-wine" @unless ($ukuranFoto[0] ?? null) hidden @endunless>
+                    Ukuran di foto: <span data-nama-ukuran>{{ $ukuranFoto[0] ?? '' }}</span>
+                </span>
+            </button>
+
+            {{-- Thumbnail: ganti foto utama --}}
+            @if (count($foto) > 1)
+                <div class="grid grid-cols-5 gap-2">
+                    @foreach ($foto as $i => $url)
+                        <button type="button" data-thumb="{{ $i }}" data-src="{{ $url }}" aria-label="Foto {{ $i + 1 }}" @if ($i === 0) aria-current="true" @endif
+                                class="aspect-square overflow-hidden rounded-xl border-2 border-transparent opacity-70 transition hover:opacity-100 aria-[current=true]:border-maroon aria-[current=true]:opacity-100">
+                            <img src="{{ $url }}" alt="" loading="lazy" class="size-full object-cover">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
             @if ($produk->catatanFoto())
                 <p class="rounded-xl border border-line-soft bg-white px-3.5 py-3 text-[12.5px] leading-relaxed text-ink-soft">{{ $produk->catatanFoto() }}</p>
             @endif
@@ -181,7 +209,7 @@
                     <div class="flex flex-wrap items-center gap-3">
                         <div class="flex items-center rounded-full border border-line bg-white">
                             <button type="button" data-jumlah="-1" aria-label="Kurangi" class="size-11 text-lg text-wine">−</button>
-                            <input type="number" name="jumlah" id="jumlah" value="{{ old('jumlah', 1) }}" min="1" max="20" aria-label="Jumlah buket"
+                            <input type="number" name="jumlah" id="jumlah" value="{{ old('jumlah', 1) }}" min="1" max="{{ $maks }}" aria-label="Jumlah buket"
                                    class="w-8 [appearance:textfield] bg-transparent text-center font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none">
                             <button type="button" data-jumlah="1" aria-label="Tambah" class="size-11 text-lg text-wine">+</button>
                         </div>
@@ -246,7 +274,7 @@
                 if (lain) r.dataset.harga = Math.max(0, parseInt(form.querySelector('[data-harga-lain]').value) || 0);
             }
             const v = form.querySelector('input[name="varian"]:checked');
-            const n = Math.min(20, Math.max(1, parseInt(jumlah?.value) || 1));
+            const n = Math.min({{ $maks }}, Math.max(1, parseInt(jumlah?.value) || 1));
 
             document.getElementById('hargaBesar').textContent = rupiah(r.dataset.harga);
             const total = document.getElementById('totalHarga');
@@ -267,13 +295,48 @@
 
         // Tombol − / + jumlah buket
         form.querySelectorAll('[data-jumlah]').forEach(b => b.addEventListener('click', () => {
-            jumlah.value = Math.min(20, Math.max(1, (parseInt(jumlah.value) || 1) + Number(b.dataset.jumlah)));
+            jumlah.value = Math.min({{ $maks }}, Math.max(1, (parseInt(jumlah.value) || 1) + Number(b.dataset.jumlah)));
             hitung();
         }));
 
         form.addEventListener('input', hitung);
         form.addEventListener('change', hitung);
         hitung();
+    })();
+</script>
+
+<script>
+    // Foto utama: ganti lewat thumbnail atau saat ukuran dipilih. Label "Ukuran di foto" ikut berubah.
+    (() => {
+        const utama = document.getElementById('fotoUtama');
+        if (!utama?.dataset.galeri) return;
+        const foto = JSON.parse(utama.dataset.galeri);
+        const ukuranFoto = JSON.parse(utama.dataset.ukuranFoto || '[]');
+        const peta = JSON.parse(utama.dataset.petaUkuran || '{}');
+        const label = utama.querySelector('[data-label-ukuran]');
+        const thumbs = document.querySelectorAll('[data-thumb]');
+
+        const tampilkan = (i) => {
+            utama.querySelector('img').src = foto[i];
+            utama.dataset.mulai = i;
+            thumbs.forEach((t) => t.setAttribute('aria-current', Number(t.dataset.thumb) === i));
+            label.hidden = !ukuranFoto[i];
+            label.querySelector('[data-nama-ukuran]').textContent = ukuranFoto[i] || '';
+        };
+
+        thumbs.forEach((t) => t.addEventListener('click', () => tampilkan(Number(t.dataset.thumb))));
+
+        // Pilih ukuran → tampilkan foto ukuran itu. Kalau belum ada fotonya, foto tetap & label disembunyikan.
+        const ikutiUkuran = (r) => {
+            if (!r || r.dataset.lain !== undefined) return;
+            if (r.value in peta) tampilkan(peta[r.value]);
+            else label.hidden = true;
+        };
+        document.querySelectorAll('input[name="ukuran_produk_id"]').forEach((r) => r.addEventListener('change', () => ikutiUkuran(r)));
+
+        // Saat halaman dibuka: kalau ukuran yang terpilih punya foto, langsung tampilkan foto itu
+        const terpilih = document.querySelector('input[name="ukuran_produk_id"]:checked');
+        if (terpilih && terpilih.value in peta) ikutiUkuran(terpilih);
     })();
 </script>
 @endsection

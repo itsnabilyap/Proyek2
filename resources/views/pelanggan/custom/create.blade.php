@@ -73,7 +73,7 @@
                         @error('tanggal_dibutuhkan') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
                     <label class="{{ $label }}">No. WhatsApp
-                        <input type="tel" name="no_whatsapp" value="{{ old('no_whatsapp', auth()->user()->no_hp) }}" placeholder="08xxxxxxxxxx" autocomplete="tel" required
+                        <input type="tel" name="no_whatsapp" value="{{ old('no_whatsapp', auth()->user()?->no_hp) }}" placeholder="08xxxxxxxxxx" autocomplete="tel" required
                                class="{{ $isian }} {{ $salah('no_whatsapp') }}">
                         @error('no_whatsapp') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
@@ -102,7 +102,15 @@
                 </label>
             </fieldset>
 
-            <button type="submit" class="btn btn-primary mt-6 h-12 w-full rounded-full text-[15px] font-bold">Kirim Request Custom</button>
+            @guest
+                <p class="mt-6 mb-2.5 flex items-start gap-2 rounded-xl bg-blush-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+                    <i class="bi bi-info-circle mt-px text-maroon"></i>
+                    <span>Kamu perlu masuk untuk mengirim request. Isian akan disimpan, jadi tidak perlu mengetik ulang (kecuali foto referensi).</span>
+                </p>
+            @endguest
+            <button type="submit" class="btn btn-primary @auth mt-6 @endauth h-12 w-full rounded-full text-[15px] font-bold">
+                @auth Kirim Request Custom @else Masuk &amp; Kirim Request @endauth
+            </button>
         </form>
 
         {{-- ===== SAMPING ===== --}}

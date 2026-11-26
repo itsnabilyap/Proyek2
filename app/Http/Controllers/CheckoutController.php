@@ -88,13 +88,13 @@ class CheckoutController extends Controller
             $pesanan = $this->buatPesananCustom($request, $data, $pickup);
         } else {
         $pesanan = DB::transaction(function () use ($user, $data, $pickup) {
-            $items = $user->keranjang()->whereIn('id', $data['item'])->with('ukuran.produk.kategori')->get();
+            $items = $user->keranjang()->whereIn('id', $data['item'])->with('ukuran')->get();
 
             if ($items->isEmpty()) {
                 throw ValidationException::withMessages(['keranjang' => 'Keranjang kosong.']);
             }
 
-            $subtotal = $titipan = 0;
+            $subtotal = 0;
             foreach ($items as $item) {
                 // Kunci baris produk supaya dua pembeli tidak mengambil stok terakhir bersamaan.
                 $produk = Produk::lockForUpdate()->findOrFail($item->ukuran->produk_id);
@@ -107,7 +107,6 @@ class CheckoutController extends Controller
 
                 $item->setRelation('produk', $produk);
                 $subtotal += $item->harga_satuan * $item->jumlah;
-                $titipan += $item->nilai_uang * $item->jumlah;
             }
 
             $ongkir = $pickup ? 0 : Pesanan::KURIR[$data['layanan_kurir']]['ongkir'];
@@ -115,7 +114,6 @@ class CheckoutController extends Controller
             $pesanan = $user->pesanan()->create([
                 ...collect($data)->except('item')->all(),
                 'subtotal' => $subtotal,
-                'uang_titipan' => $titipan,     // bagian subtotal yang berupa uang bucket uang
                 'ongkir' => $ongkir,
                 'total_harga' => $subtotal + $ongkir,
             ]);
@@ -129,7 +127,6 @@ class CheckoutController extends Controller
                     'varian' => $item->varian,
                     'warna' => $item->warna,
                     'harga' => $item->harga_satuan,
-                    'uang_titipan' => $item->nilai_uang,
                     'jumlah' => $item->jumlah,
                     'kartu_ucapan' => $item->kartu_ucapan,
                 ]);

@@ -38,9 +38,12 @@ class KatalogSeeder extends Seeder
                 'nama_produk' => $nama,
                 'slug' => Str::slug($nama),
                 'deskripsi' => $deskripsi,
-                'gambar' => $gambar,
                 'stok' => 10,
             ]);
+
+            if ($gambar) {
+                $produk->galeri()->create(['file' => $gambar, 'urutan' => 0]);
+            }
 
             // Baru ukuran termurah. Medium/Large ditambah saat halaman detail produk dibuat.
             $produk->ukuran()->create(['nama_ukuran' => 'Small', 'harga' => $harga]);

@@ -17,7 +17,7 @@ class KatalogController extends Controller
             : 'termurah';
 
         $produk = Produk::aktif()
-            ->with(['kategori', 'ukuran'])
+            ->with(['kategori', 'ukuran', 'galeri'])
             ->withMin('ukuran as harga_mulai', 'harga')
             ->when($kategoriAktif, fn ($q) => $q->whereHas('kategori', fn ($k) => $k->where('slug', $kategoriAktif)))
             ->when($urut === 'termurah', fn ($q) => $q->orderBy('harga_mulai'))
@@ -37,7 +37,7 @@ class KatalogController extends Controller
     {
         abort_unless($produk->aktif, 404);
     
-        $produk->load(['kategori', 'ukuran']);
+        $produk->load(['kategori', 'ukuran', 'galeri']);
 
     
         $lainnya = Produk::aktif()

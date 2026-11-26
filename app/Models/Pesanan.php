@@ -13,7 +13,7 @@ class Pesanan extends Model
     protected $fillable = [
         'user_id', 'metode_pengiriman', 'layanan_kurir', 'nama_penerima', 'no_whatsapp',
         'alamat', 'patokan', 'tanggal', 'slot_waktu', 'catatan_florist',
-        'subtotal', 'ongkir', 'total_harga', 'metode_pembayaran', 'status_pesanan', 'bahan_dipotong_at',
+        'subtotal', 'ongkir', 'total_harga', 'metode_pembayaran', 'status_pesanan',
     ];
 
     /** Harga kurir ditentukan di sini, bukan dari form. */
@@ -28,7 +28,7 @@ class Pesanan extends Model
 
     protected function casts(): array
     {
-        return ['bahan_dipotong_at' => 'datetime', 'tanggal' => 'date', 'subtotal' => 'integer', 'ongkir' => 'integer', 'total_harga' => 'integer'];
+        return ['tanggal' => 'date', 'subtotal' => 'integer', 'ongkir' => 'integer', 'total_harga' => 'integer'];
     }
 
     protected static function booted(): void
@@ -119,46 +119,5 @@ class Pesanan extends Model
         }
     
         return $langkah;
-    }
-
-    /**
-     * Total bahan yang dibutuhkan pesanan ini menurut resep tiap ukuran.
-     * @return \Illuminate\Support\Collection<int, array{bahan: Bahan, jumlah: int}>  (kunci = bahan_id)
-     */
-    public function kebutuhanBahan(): \Illuminate\Support\Collection
-    {
-        $this->loadMissing('detailPesanan.ukuranProduk.bahan');
-
-        $butuh = collect();
-        foreach ($this->detailPesanan as $d) {
-            foreach ($d->ukuranProduk?->bahan ?? [] as $b) {   // pesanan custom tidak punya resep
-                $lama = $butuh[$b->id]['jumlah'] ?? 0;
-                $butuh[$b->id] = ['bahan' => $b, 'jumlah' => $lama + $b->pivot->jumlah * $d->jumlah];
-            }
-        }
-
-        return $butuh;
-    }
-
-    /**
-     * Kurangi stok bahan sesuai resep (sekali saja per pesanan). Tercatat di riwayat stok.
-     * @return array<int, string> daftar bahan yang stoknya kurang, untuk peringatan ke admin
-     */
-    public function potongBahan(): array
-    {
-        if ($this->bahan_dipotong_at) return [];
-
-        $kurang = [];
-        foreach ($this->kebutuhanBahan() as ['bahan' => $bahan, 'jumlah' => $jumlah]) {
-            $sisa = $bahan->fresh()->stok;
-            if ($sisa < $jumlah) {
-                $kurang[] = "{$bahan->nama_bahan} (butuh {$jumlah}, sisa {$sisa} {$bahan->satuan})";
-            }
-            $bahan->ubahStok(-$jumlah, 'keluar', "Dipakai pesanan {$this->kode_pesanan}");
-        }
-
-        $this->forceFill(['bahan_dipotong_at' => now()])->save();
-
-        return $kurang;
     }
 }

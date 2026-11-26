@@ -16,10 +16,9 @@
 @endphp
 
 @section('content')
-<div class="wrap flex flex-col items-start gap-8 pt-12 pb-24 md:flex-row">
-    @include('pelanggan.akun._menu')
-
-    <section class="flex w-full min-w-0 flex-1 flex-col gap-6">
+{{-- Menu akun pindah ke dropdown profil di header --}}
+<div class="wrap max-w-[880px] pt-12 pb-24">
+    <section class="flex w-full min-w-0 flex-col gap-6">
         <h1 class="text-[22px] font-bold">Pengaturan Akun</h1>
 
         {{-- ========== PROFIL ========== --}}

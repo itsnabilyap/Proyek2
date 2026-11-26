@@ -37,12 +37,17 @@
                 </label>
 
                 @foreach ($items as $item)
-                    @php $produk = $item->ukuran->produk; @endphp
+                    @php $produk = $item->ukuran->produk; $habis = $produk->stok < 1; @endphp
                     <article class="{{ $kartu }} grid grid-cols-[20px_72px_1fr] items-start gap-x-4 gap-y-3 sm:grid-cols-[20px_104px_1fr_auto] sm:gap-5">
                         {{-- Checkbox ikut form checkout di bawah (atribut form="formCheckout") --}}
-                        <input type="checkbox" name="item[]" value="{{ $item->id }}" form="formCheckout" checked data-pilih
-                               data-subtotal="{{ $item->subtotal }}" data-jumlah="{{ $item->jumlah }}"
-                               aria-label="Pilih {{ $produk->nama_produk }}" class="size-5 accent-maroon">
+                        {{-- Stok habis: tidak bisa dipilih untuk checkout --}}
+                        @if ($habis)
+                            <input type="checkbox" disabled aria-label="{{ $produk->nama_produk }} stok habis" class="size-5 cursor-not-allowed">
+                        @else
+                            <input type="checkbox" name="item[]" value="{{ $item->id }}" form="formCheckout" checked data-pilih
+                                   data-subtotal="{{ $item->subtotal }}" data-jumlah="{{ $item->jumlah }}"
+                                   aria-label="Pilih {{ $produk->nama_produk }}" class="size-5 accent-maroon">
+                        @endif
 
                         @if ($produk->gambar_url)
                             <img src="{{ $produk->gambar_url }}" alt="" class="h-22.5 w-18 rounded-xl object-cover sm:h-32 sm:w-26">
@@ -51,14 +56,19 @@
                         @endif
 
                         <div class="flex min-w-0 flex-col gap-2">
-                            <span class="w-fit rounded-full bg-blush px-2.5 py-0.5 text-[11px] font-semibold text-wine">{{ $produk->kategori->nama_kategori }}</span>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="w-fit rounded-full bg-blush px-2.5 py-0.5 text-[11px] font-semibold text-wine">{{ $produk->kategori->nama_kategori }}</span>
+                                @if ($habis)
+                                    <span class="w-fit rounded-full bg-danger-soft px-2.5 py-0.5 text-[11px] font-bold text-danger">Stok habis</span>
+                                @endif
+                            </div>
                             <h2 class="font-serif text-[22px] font-medium">{{ $produk->nama_produk }}</h2>
 
-                            <form method="POST" action="{{ route('keranjang.update', $item) }}" class="flex items-center gap-2.5 text-[13px] text-muted">
+                            <form method="POST" action="{{ route('keranjang.update', $item) }}" class="flex min-w-0 flex-col items-start gap-1.5 text-[13px] text-muted sm:flex-row sm:items-center sm:gap-2.5">
                                 @csrf @method('PATCH')
                                 <label for="ukuran-{{ $item->id }}">Ukuran</label>
                                 <select id="ukuran-{{ $item->id }}" name="ukuran_produk_id" onchange="this.form.submit()"
-                                        class="h-10 rounded-[10px] border border-line bg-white px-3 text-[13px] font-semibold text-ink focus:border-maroon focus:ring-4 focus:ring-maroon/15 focus:outline-none">
+                                        class="h-10 w-full min-w-0 truncate rounded-[10px] border border-line bg-white px-3 text-[13px] font-semibold text-ink focus:border-maroon sm:w-auto focus:ring-4 focus:ring-maroon/15 focus:outline-none">
                                     @if ($item->harga_bebas)
                                         <option selected>Harga pilihan · {{ $rupiah($item->harga_bebas) }}</option>
                                     @endif
@@ -81,7 +91,7 @@
                             </p>
                         </div>
 
-                        <div class="col-[2/-1] flex items-center justify-between gap-4 sm:col-auto sm:h-full sm:flex-col sm:items-end">
+                        <div class="col-[1/-1] flex items-center justify-between gap-4 border-t border-line-soft pt-3 sm:col-auto sm:border-0 sm:pt-0 sm:h-full sm:flex-col sm:items-end">
                             <div class="sm:text-right">
                                 <strong class="block text-xl text-maroon">{{ $rupiah($item->subtotal) }}</strong>
                                 <small class="text-xs text-muted">{{ $rupiah($item->harga_satuan) }} / buket</small>
@@ -146,6 +156,7 @@
     (() => {
         const semua = document.getElementById('pilihSemua');
         const items = [...document.querySelectorAll('[data-pilih]')];
+        if (!items.length) { semua.checked = false; semua.disabled = true; document.getElementById('btnCheckout').disabled = true; }
         const rupiah = n => 'Rp' + n.toLocaleString('id-ID');
 
         const update = () => {
@@ -159,7 +170,7 @@
             document.getElementById('sumTotal').textContent = rupiah(subtotal);
             document.getElementById('btnCheckout').disabled = dipilih.length === 0;
 
-            semua.checked = dipilih.length === items.length;
+            semua.checked = items.length > 0 && dipilih.length === items.length;
             semua.indeterminate = dipilih.length > 0 && dipilih.length < items.length;
         };
 

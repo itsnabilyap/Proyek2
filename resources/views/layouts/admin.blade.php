@@ -26,7 +26,6 @@
     $badgePesanan = \App\Models\Pesanan::where('status_pesanan', 'dirangkai')->count()
         + \App\Models\Custom::where('status', 'baru')->count();
     $badgeProduk  = \App\Models\Produk::where('aktif', true)->where('stok', '<', 5)->count();
-    $badgeBahan   = \App\Models\Bahan::menipis()->count();
 
     // [nama route, label, badge]
     $menu = [
@@ -34,7 +33,6 @@
         ['admin.pesanan.index',      'Data Pesanan',       $badgePesanan],
         ['admin.produk.index',       'Katalog Produk',     $badgeProduk],
         ['admin.pelanggan.index',    'Data Pelanggan',     0],
-        ['admin.bahan.index',        'Stok Bahan',         $badgeBahan],
         ['admin.laporan.index',      'Laporan',            0],
         ['admin.pengaturan.index',   'Pengaturan',         0],
     ];
@@ -45,11 +43,12 @@
 <div class="flex min-h-screen">
     {{-- ========== SIDEBAR ==========
          Laptop/desktop (≥1024px): menempel di kiri, bisa digeser keluar (body.sidebar-tutup).
+         lg:left-auto penting: sticky + left-0 membuat sidebar tetap 'nempel' di layar walau sudah digeser keluar.
          Tablet/HP: jadi laci dari kiri, dibuka tombol hamburger (body.sidebar-buka). --}}
     <aside id="sidebar"
            class="fixed inset-y-0 left-0 z-60 flex print:hidden h-screen w-60 shrink-0 -translate-x-full flex-col bg-sidebar px-4 pt-7 pb-4 text-white shadow-[0_0_40px_rgb(42_26_30/0.3)] transition-[translate,margin] duration-250
                   in-[.sidebar-buka]:translate-x-0
-                  lg:sticky lg:top-0 lg:translate-x-0 lg:shadow-none lg:in-[.sidebar-tutup]:-ml-60">
+                  lg:sticky lg:top-0 lg:left-auto lg:translate-x-0 lg:shadow-none lg:in-[.sidebar-tutup]:-ml-60">
         <div class="flex flex-col gap-0.5 px-2.5 pb-6">
             <strong class="font-serif text-2xl font-medium">@bucket.imy</strong>
             <span class="text-[11px] tracking-[2px] text-white/70 uppercase">{{ $judulRole }}</span>
@@ -86,25 +85,32 @@
 
     {{-- ========== KONTEN ========== --}}
     <main class="min-w-0 flex-1 px-3 pb-7 min-[381px]:px-4 sm:pb-8 lg:px-6 lg:pb-9 xl:px-8 xl:pb-10 min-[1440px]:px-12 min-[1440px]:pb-12">
-        <header class="mb-6 flex flex-col justify-between gap-4 border-b border-line pt-7 pb-5 md:flex-row md:items-start">
-            <div class="flex items-start gap-4">
+        <header class="mb-5 flex flex-col justify-between gap-3 border-b border-line pt-4 pb-4 md:flex-row md:items-start print:hidden">
+            {{-- Ikon hamburger tanpa kotak, sejajar judul halaman --}}
+            <div class="flex items-start gap-3">
                 <button type="button" id="menuToggle" aria-label="Buka/tutup menu" aria-controls="sidebar" aria-expanded="true"
-                        class="mt-0.5 flex size-10.5 shrink-0 print:hidden items-center justify-center rounded-xl border border-line bg-white text-[22px] text-wine transition-colors hover:border-[#F0C9D0] hover:bg-blush">
+                        class="-ml-1.5 flex size-9 shrink-0 print:hidden items-center justify-center rounded-lg text-2xl text-wine transition-colors hover:text-maroon focus-visible:ring-2 focus-visible:ring-maroon/30 focus-visible:outline-none">
                     <i class="bi bi-list"></i>
                 </button>
                 <div>
-                    <span class="font-serif text-lg sm:text-[22px]">{{ $judulRole }}</span>
-                    <h1 class="mt-1.5 text-2xl font-bold tracking-tight sm:text-[28px] lg:text-[32px]">@yield('judul', 'Dashboard')</h1>
+                    {{-- Judul halaman langsung di samping ikon (baris "Dashboard Admin" dihapus) --}}
+                    <h1 class="text-xl leading-9 font-bold tracking-tight sm:text-[22px]">@yield('judul', 'Dashboard')</h1>
                     @hasSection('subjudul') <p class="mt-1.5 text-[13px] text-muted">@yield('subjudul')</p> @endif
                 </div>
             </div>
-            <div class="flex flex-col items-start gap-3 md:items-end print:hidden">
-                <span class="inline-flex items-center gap-2 rounded-xl border border-[#F0C9D0] bg-[#FFF7F8] px-4 py-2 text-[13px] text-wine sm:whitespace-nowrap">
-                    <i class="bi bi-calendar3"></i> Hari ini: {{ now()->translatedFormat('l, j F Y') }}
-                </span>
-                @yield('aksi')
-            </div>
+            <span class="inline-flex items-center gap-2 self-start rounded-xl border border-[#F0C9D0] bg-[#FFF7F8] px-4 py-2 text-[13px] text-wine sm:whitespace-nowrap print:hidden">
+                <i class="bi bi-calendar3"></i> Hari ini: {{ now()->translatedFormat('l, j F Y') }}
+            </span>
         </header>
+
+        {{-- Baris di bawah garis: tab halaman di kiri (mis. Pesanan Katalog | Request Custom),
+             tombol aksi (Ekspor, Cetak, Tambah, dll) di kanan, sejajar --}}
+        @if (View::hasSection('tab-atas') || View::hasSection('aksi'))
+            <div class="mb-5 flex flex-wrap items-center gap-3 print:hidden">
+                @hasSection('tab-atas') <div class="w-full sm:w-auto sm:min-w-[420px] sm:flex-1">@yield('tab-atas')</div> @endif
+                @hasSection('aksi') <div class="flex flex-wrap items-center gap-3 md:ml-auto">@yield('aksi')</div> @endif
+            </div>
+        @endif
 
         <x-toast />
         <x-konfirmasi />

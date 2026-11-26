@@ -49,7 +49,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('home')->with('status', 'Akun berhasil dibuat. Selamat datang!');
+        return redirect()->intended(route('home'))->with('status', 'Akun berhasil dibuat. Selamat datang!');
     }
 
     // ===== MASUK (pelanggan) =====

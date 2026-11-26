@@ -138,3 +138,54 @@ document.querySelectorAll('[data-toast]').forEach(toast => {
     el('batal').addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });   // klik di luar kotak
 })();
+
+// Popup galeri foto (x-lightbox): tombol dengan data-galeri='["url", ...]'
+(() => {
+    const dialog = document.getElementById('lightbox');
+    if (!dialog) return;
+    const jalur = dialog.querySelector('[data-lb-jalur]');
+    const titik = dialog.querySelector('[data-lb-titik]');
+    let foto = [];
+
+    const indeks = () => Math.round(jalur.scrollLeft / jalur.clientWidth);
+    const perbarui = () => {
+        const i = indeks();
+        dialog.querySelector('[data-lb-urutan]').textContent = foto.length > 1 ? `${i + 1} / ${foto.length}` : '';
+        titik.querySelectorAll('span').forEach((t, k) => t.classList.toggle('bg-white', k === i));
+        dialog.querySelector('[data-lb-geser="-1"]').disabled = i === 0;
+        dialog.querySelector('[data-lb-geser="1"]').disabled = i === foto.length - 1;
+    };
+    const ke = (i, halus = true) => jalur.scrollTo({ left: i * jalur.clientWidth, behavior: halus ? 'smooth' : 'instant' });
+
+    document.addEventListener('click', e => {
+        const pemicu = e.target.closest('[data-galeri]');
+        if (!pemicu) return;
+        e.preventDefault();
+        foto = JSON.parse(pemicu.dataset.galeri || '[]');
+        if (!foto.length) return;
+
+        const judul = pemicu.dataset.judul || '';
+        jalur.innerHTML = foto.map((url, k) => `
+            <figure class="flex w-full shrink-0 snap-center items-center justify-center px-3 sm:px-20">
+                <img src="${url}" alt="${judul} foto ${k + 1}" class="max-h-full max-w-full rounded-xl object-contain select-none" draggable="false">
+            </figure>`).join('');
+        titik.innerHTML = foto.length > 1 ? foto.map(() => '<span class="size-2 rounded-full bg-white/35 transition-colors"></span>').join('') : '';
+        dialog.querySelector('[data-lb-judul]').textContent = judul;
+
+        dialog.showModal();
+        document.documentElement.style.overflow = 'hidden';
+        ke(Number(pemicu.dataset.mulai || 0), false);
+        perbarui();
+    });
+
+    jalur.addEventListener('scroll', () => requestAnimationFrame(perbarui), { passive: true });
+    dialog.querySelectorAll('[data-lb-geser]').forEach(b => b.addEventListener('click', () => ke(indeks() + Number(b.dataset.lbGeser))));
+    dialog.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') ke(indeks() + 1);
+        if (e.key === 'ArrowLeft') ke(indeks() - 1);
+    });
+    dialog.querySelector('[data-lb-tutup]').addEventListener('click', () => dialog.close());
+    // Klik area gelap di luar foto → tutup
+    jalur.addEventListener('click', e => { if (e.target.tagName !== 'IMG') dialog.close(); });
+    dialog.addEventListener('close', () => { document.documentElement.style.overflow = ''; });
+})();

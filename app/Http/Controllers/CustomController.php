@@ -11,9 +11,22 @@ use Illuminate\View\View;
 
 class CustomController extends Controller
 {
+    /** Riwayat request custom milik pelanggan (menu profil > Request Custom). */
+    public function riwayat(Request $request): View
+    {
+        $riwayat = $request->user()->Custom()->with('pesanan')->latest()->paginate(10);
+
+        return view('pelanggan.custom.riwayat', compact('riwayat'));
+    }
+
     public function create(Request $request): View
     {
         // Dibuka dari kartu katalog / link "Request Custom": jenis langsung terpilih (?jenis=...)
+        // Isian yang disimpan sebelum login dipulihkan ke form (foto tidak bisa ikut, harus dipilih ulang).
+        if ($request->user() && $draft = $request->session()->pull('draft_custom')) {
+            $request->session()->flashInput($draft);
+        }
+
         $jenis = old('jenis_bucket', $request->query('jenis'));
 
         return view('pelanggan.custom.create', [
@@ -24,6 +37,14 @@ class CustomController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Belum login: simpan isian dulu, minta masuk, lalu kembali ke form custom.
+        if (! $request->user()) {
+            $request->session()->put('draft_custom', $request->except(['_token', 'foto_referensi']));
+
+            return redirect()->guest(route('login'))
+                ->with('status', 'Masuk dulu untuk mengirim request custom. Isian kamu sudah disimpan.');
+        }
+
         $jenis = $request->input('jenis_bucket');
         $budgetValid = Custom::JENIS[$jenis]['budget'] ?? [];
 

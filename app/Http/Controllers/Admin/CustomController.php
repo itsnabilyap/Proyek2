@@ -42,6 +42,19 @@ class CustomController extends Controller
         return view($request->ajax() ? 'admin.custom._detail' : 'admin.custom.show', compact('custom'));
     }
 
+    /**
+     * Tombol "Balas via WhatsApp" di dashboard: request ditandai "dihubungi" lalu WA dibuka.
+     * Catatan: website tidak bisa memastikan pesan benar-benar terkirim (nanti pakai webhook kirimi.id).
+     */
+    public function balas(Custom $custom): RedirectResponse
+    {
+        if ($custom->status === 'baru') {
+            $custom->update(['status' => 'dihubungi']);
+        }
+
+        return redirect()->away($custom->link_wa);
+    }
+
     public function update(Request $request, Custom $custom): RedirectResponse
     {
         $data = $request->validate([

@@ -73,7 +73,6 @@ class UkuranProdukSeeder extends Seeder
             $produk = Produk::where('slug', $slug)->first();
             if (! $produk) continue;
 
-            $produk->update(['ukuran_foto' => $ukuranFoto]);
             $produk->ukuran()->delete();   // hapus ukuran lama (termasuk isi keranjang yang memakainya)
 
             foreach ($ukuranList as [$nama, $label, $harga, $ket, $detail]) {
@@ -85,6 +84,10 @@ class UkuranProdukSeeder extends Seeder
                     'detail' => $detail,
                 ]);
             }
+
+            // Foto sampul = foto ukuran ini
+            $ukuranId = $produk->ukuran()->where('nama_ukuran', $ukuranFoto)->value('id');
+            $produk->galeri()->orderBy('urutan')->first()?->update(['ukuran_produk_id' => $ukuranId]);
         }
     }
 }
